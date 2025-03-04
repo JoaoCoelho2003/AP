@@ -5,7 +5,7 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from predict import evaluate_text
+from predict import load_model, evaluate_text
 
 app = Flask(__name__)
 CORS(app)
@@ -14,24 +14,29 @@ CORS(app)
 def predict():
     data = request.json
     text = data.get('text', '')
-    model = data.get('model', 'logistic')
-    
+    model_type = data.get('model', 'logistic')
+        
     if not text:
         return jsonify({'error': 'No text provided'}), 400
     
-    prediction, confidence = evaluate_text(text)
+    model, bow = load_model(model_type)
+    if bow is None:
+        return jsonify({'error': 'Model or vectorizer not found'}), 500
+
+    prediction, confidence = evaluate_text(model, bow, text, model_type)
     
     return jsonify({
         'prediction': prediction,
         'confidence': float(confidence),
-        'model': model
+        'model': model_type
     })
 
 @app.route('/api/models', methods=['GET'])
 def get_models():
     return jsonify({
         'models': [
-            {'id': 'logistic', 'name': 'Logistic Regression'}
+            {'id': 'logistic', 'name': 'Logistic Regression'},
+            {'id' : 'neuralnet', 'name': 'Deep Neural Network'}
         ]
     })
 

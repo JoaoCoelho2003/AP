@@ -2,30 +2,36 @@ import numpy as np
 
 class BagOfWords:
     def __init__(self):
-        self.vocab = {}
+        self.vocabulary_ = {}
+        self.inverse_vocabulary_ = []
 
-    def fit(self, texts):
-        unique_words = set()
-        for text in texts:
-            words = text.lower().split()
-            unique_words.update(words)
-        self.vocab = {word: i for i, word in enumerate(sorted(unique_words))}
+    def fit(self, documents):
+        """Learn the vocabulary from the documents."""
+        for document in documents:
+            for word in document.split():
+                if word not in self.vocabulary_:
+                    self.vocabulary_[word] = len(self.vocabulary_)
+                    self.inverse_vocabulary_.append(word)
+        return self
 
-    def transform(self, texts):
-        vectors = np.zeros((len(texts), len(self.vocab)))
-        for i, text in enumerate(texts):
-            words = text.lower().split()
-            for word in words:
-                if word in self.vocab:
-                    vectors[i, self.vocab[word]] += 1
-        return vectors
+    def transform(self, documents):
+        """Transform documents to document-term matrix."""
+        rows = []
+        for document in documents:
+            row = [0] * len(self.vocabulary_)
+            for word in document.split():
+                if word in self.vocabulary_:
+                    row[self.vocabulary_[word]] += 1
+            rows.append(row)
+        return rows
 
-    def fit_transform(self, texts):
-        self.fit(texts)
-        return self.transform(texts)
+    def fit_transform(self, documents):
+        """Learn the vocabulary and transform documents to document-term matrix."""
+        self.fit(documents)
+        return self.transform(documents)
+    
+    def save(self, path="trained_models/vocab.npy"):
+        np.save(path, self.vocabulary_)
 
-    def save(self, path="models/vocab.npy"):
-        np.save(path, self.vocab)
-
-    def load(self, path="models/vocab.npy"):
-        self.vocab = np.load(path, allow_pickle=True).item()
+    def load(self, path="trained_models/vocab.npy"):
+        self.vocabulary_ = np.load(path, allow_pickle=True).item()

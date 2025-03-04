@@ -35,11 +35,10 @@ class LogisticRegression:
         linear_model = np.dot(X, self.weights) + self.bias
         return self.sigmoid(linear_model)
 
-
-    def save(self, path="models/logistic_weights.npz"):
+    def save(self, path="trained_models/logistic_weights.npz"):
         np.savez(path, weights=self.weights, bias=self.bias)
 
-    def load(self, path="models/logistic_weights.npz"):
+    def load(self, path="trained_models/logistic_weights.npz"):
         data = np.load(path)
         self.weights = data["weights"]
         self.bias = data["bias"]
