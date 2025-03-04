@@ -1,138 +1,154 @@
 <template>
   <div class="min-h-screen transition-all duration-500 relative overflow-hidden" 
        :class="{ 'dark': isDark, 'bg-gray-50 text-gray-900': !isDark, 'bg-gray-900 text-gray-100': isDark }">
-    <div class="absolute inset-0 -z-10 overflow-hidden">
-      <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary-100/30 to-transparent dark:from-primary-900/20 dark:to-transparent"></div>
+    <div class="fixed inset-0 pointer-events-none">
+      <canvas ref="neuralCanvas" class="absolute inset-0 w-full h-full"></canvas>
+      
+      <div class="absolute inset-0 bg-gradient-to-br from-primary-100/30 to-transparent dark:from-primary-900/20 dark:to-transparent"></div>
       <div class="absolute -top-[40%] -right-[30%] w-[80%] h-[80%] rounded-full bg-gradient-to-br from-primary-200/20 to-purple-300/20 dark:from-primary-800/10 dark:to-purple-900/10 blur-3xl"></div>
       <div class="absolute -bottom-[40%] -left-[30%] w-[80%] h-[80%] rounded-full bg-gradient-to-tr from-blue-200/20 to-primary-300/20 dark:from-blue-900/10 dark:to-primary-800/10 blur-3xl"></div>
-      
-      <div v-for="i in 8" :key="i" 
-           class="absolute rounded-full opacity-30 dark:opacity-20 particle"
-           :class="`particle-${i}`"
-           :style="{
-             width: `${10 + Math.random() * 20}px`,
-             height: `${10 + Math.random() * 20}px`,
-             background: isDark ? 
-               `rgba(${100 + Math.random() * 155}, ${100 + Math.random() * 155}, ${200 + Math.random() * 55}, 0.3)` : 
-               `rgba(${50 + Math.random() * 155}, ${100 + Math.random() * 155}, ${200 + Math.random() * 55}, 0.3)`,
-             left: `${Math.random() * 100}%`,
-             top: `${Math.random() * 100}%`,
-             animationDuration: `${20 + Math.random() * 40}s`,
-             animationDelay: `${Math.random() * 5}s`
-           }">
-      </div>
     </div>
 
-    <div class="container mx-auto px-4 py-8 max-w-4xl relative">
-      <TheHeader :isDark="isDark" @toggle-theme="toggleTheme" />
+    <div class="w-full relative">
+      <TheHeader :isDark="isDark" @toggle-theme="toggleTheme" class="w-full" />
       
-      <main class="my-8">
-        <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all duration-300 transform hover:shadow-2xl">
-          <div class="mb-8 relative group">
-            <label for="text-input" class="block mb-2 font-medium text-gray-700 dark:text-gray-300 transition-all duration-300 group-focus-within:text-primary-600 dark:group-focus-within:text-primary-400">
-              Enter text to analyze:
-            </label>
-            <div class="relative">
-              <textarea 
-                id="text-input" 
-                v-model="text"
-                placeholder="Paste or type text here..."
-                rows="8"
-                class="w-full px-5 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/90 dark:bg-gray-700/90 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 resize-none"
-                :disabled="isLoading"
-                :class="{'shadow-inner': text.length > 0}"
-              ></textarea>
-              <div class="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-gray-500" v-if="text.length > 0">
-                {{ text.length }} characters
-              </div>
-            </div>
-          </div>
-          
-          <div class="mb-8">
-            <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
-              Select model:
-            </label>
-            <div class="relative">
-              <button 
-                type="button"
-                @click="isDropdownOpen = !isDropdownOpen"
-                class="w-full flex items-center justify-between px-5 py-4 bg-white/90 dark:bg-gray-700/90 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500"
-              >
-                <span>{{ selectedModelName }}</span>
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  class="h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-300" 
-                  :class="{ 'transform rotate-180': isDropdownOpen }"
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              
-              <div 
-                v-if="isDropdownOpen" 
-                class="absolute z-10 w-full mt-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden transform origin-top transition-all duration-200 animate-dropdown"
-              >
-                <div class="max-h-60 overflow-y-auto">
-                  <button
-                    v-for="model in models"
-                    :key="model.id"
-                    @click="selectModel(model.id)"
-                    class="w-full px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
-                    :class="{ 'bg-primary-50 dark:bg-primary-900/20': selectedModel === model.id }"
-                  >
-                    <div class="flex items-center">
-                      <div class="flex-1">
-                        <div class="font-medium">{{ model.name }}</div>
-                        <div v-if="model.description" class="text-sm text-gray-500 dark:text-gray-400">
-                          {{ model.description }}
-                        </div>
-                      </div>
-                      <svg 
-                        v-if="selectedModel === model.id"
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 text-primary-600 dark:text-primary-400" 
-                        fill="none" 
-                        viewBox="0 0 24 24" 
-                        stroke="currentColor"
-                      >
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </div>
-                  </button>
+      <main class="container mx-auto px-4 py-8">
+        <div class="flex flex-col lg:flex-row gap-8">
+          <div class="w-full lg:w-1/2">
+            <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all duration-300 transform hover:shadow-2xl min-h-[500px]">
+              <div class="mb-8 relative group">
+                <label for="text-input" class="block mb-2 font-medium text-gray-700 dark:text-gray-300 transition-all duration-300 group-focus-within:text-primary-600 dark:group-focus-within:text-primary-400">
+                  Enter text to analyze:
+                </label>
+                <div class="relative">
+                  <textarea 
+                    id="text-input" 
+                    v-model="text"
+                    placeholder="Paste or type text here..."
+                    rows="8"
+                    class="w-full px-5 py-4 rounded-xl border-2 border-gray-300 dark:border-gray-600 bg-white/90 dark:bg-gray-700/90 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 resize-none"
+                    :disabled="isLoading"
+                    :class="{'shadow-inner': text.length > 0}"
+                  ></textarea>
+                  <div class="absolute bottom-3 right-3 text-xs text-gray-400 dark:text-gray-500" v-if="text.length > 0">
+                    {{ text.length }} characters
+                  </div>
                 </div>
               </div>
+              
+              <div class="mb-8">
+                <label class="block mb-2 font-medium text-gray-700 dark:text-gray-300">
+                  Select model:
+                </label>
+                <div class="relative">
+                  <button 
+                    type="button"
+                    @click="isDropdownOpen = !isDropdownOpen"
+                    class="w-full flex items-center justify-between px-5 py-4 bg-white/90 dark:bg-gray-700/90 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-left focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-300 hover:border-primary-400 dark:hover:border-primary-500"
+                  >
+                    <span>{{ selectedModelName }}</span>
+                    <svg 
+                      xmlns="http://www.w3.org/2000/svg" 
+                      class="h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform duration-300" 
+                      :class="{ 'transform rotate-180': isDropdownOpen }"
+                      fill="none" 
+                      viewBox="0 0 24 24" 
+                      stroke="currentColor"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  <div 
+                    v-if="isDropdownOpen" 
+                    class="absolute z-10 w-full mt-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden transform origin-top transition-all duration-200 animate-dropdown"
+                  >
+                    <div class="max-h-60 overflow-y-auto">
+                      <button
+                        v-for="model in models"
+                        :key="model.id"
+                        @click="selectModel(model.id)"
+                        class="w-full px-5 py-4 text-left hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                        :class="{ 'bg-primary-50 dark:bg-primary-900/20': selectedModel === model.id }"
+                      >
+                        <div class="flex items-center">
+                          <div class="flex-1">
+                            <div class="font-medium">{{ model.name }}</div>
+                            <div v-if="model.description" class="text-sm text-gray-500 dark:text-gray-400">
+                              {{ model.description }}
+                            </div>
+                          </div>
+                          <svg 
+                            v-if="selectedModel === model.id"
+                            xmlns="http://www.w3.org/2000/svg" 
+                            class="h-5 w-5 text-primary-600 dark:text-primary-400" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                @click="predict" 
+                :disabled="isLoading || !text.trim()"
+                class="w-full px-6 py-4 rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white focus:ring-primary-500 dark:from-primary-700 dark:to-primary-600 dark:hover:from-primary-800 dark:hover:to-primary-700 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:from-primary-600 disabled:hover:to-primary-500 dark:disabled:hover:from-primary-700 dark:disabled:hover:to-primary-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
+              >
+                <div class="flex items-center justify-center">
+                  <div v-if="isLoading" class="mr-3 relative w-5 h-5">
+                    <div class="loader-ring"></div>
+                  </div>
+                  <span class="text-lg">{{ isLoading ? 'Analyzing...' : 'Analyze Text' }}</span>
+                </div>
+              </button>
             </div>
           </div>
           
-          <button 
-            @click="predict" 
-            :disabled="isLoading || !text.trim()"
-            class="w-full px-6 py-4 rounded-xl font-medium transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white focus:ring-primary-500 dark:from-primary-700 dark:to-primary-600 dark:hover:from-primary-800 dark:hover:to-primary-700 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:from-primary-600 disabled:hover:to-primary-500 dark:disabled:hover:from-primary-700 dark:disabled:hover:to-primary-600 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0"
-          >
-            <div class="flex items-center justify-center">
-              <div v-if="isLoading" class="mr-3 relative w-5 h-5">
-                <div class="loader-ring"></div>
-              </div>
-              <span class="text-lg">{{ isLoading ? 'Analyzing...' : 'Analyze Text' }}</span>
+          <div class="w-full lg:w-1/2">
+            <div class="min-h-[500px]">
+              <transition name="fade" mode="out-in">
+                <ResultCard v-if="result" :result="result" key="result" />
+                <div v-else key="empty" class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all duration-300 transform hover:shadow-2xl h-full flex flex-col items-center justify-center text-center">
+                  <div class="w-24 h-24 mb-6 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-primary-500 dark:text-primary-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                    </svg>
+                  </div>
+                  <h3 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">No Analysis Yet</h3>
+                  <p class="text-gray-600 dark:text-gray-400 max-w-md mb-6">
+                    Enter your text in the input field and click "Analyze Text" to see AI detection results here.
+                  </p>
+                  <div class="flex flex-wrap justify-center gap-3">
+                    <div class="px-4 py-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm">
+                      Fast Analysis
+                    </div>
+                    <div class="px-4 py-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm">
+                      High Accuracy
+                    </div>
+                    <div class="px-4 py-2 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 text-sm">
+                      Detailed Results
+                    </div>
+                  </div>
+                </div>
+              </transition>
             </div>
-          </button>
-        </div>
-        
-        <transition name="fade-slide-up">
-          <ResultCard v-if="result" :result="result" class="mt-8" />
-        </transition>
-        
-        <transition name="fade-slide-up">
-          <div v-if="error" class="mt-8 p-5 bg-red-100/80 dark:bg-red-900/30 backdrop-blur-sm text-red-700 dark:text-red-300 rounded-xl text-center shadow-lg border border-red-200 dark:border-red-800/50 animate-pulse">
-            {{ error }}
+            
+            <transition name="fade">
+              <div v-if="error" class="mt-8 p-5 bg-red-100/80 dark:bg-red-900/30 backdrop-blur-sm text-red-700 dark:text-red-300 rounded-xl text-center shadow-lg border border-red-200 dark:border-red-800/50 animate-pulse">
+                {{ error }}
+              </div>
+            </transition>
           </div>
-        </transition>
+        </div>
       </main>
       
-      <TheFooter />
+      <TheFooter class="w-full" />
     </div>
   </div>
 </template>
@@ -152,6 +168,8 @@ export default {
   
   setup() {
     const isDark = ref(false)
+    const neuralCanvas = ref(null)
+    let animationFrame = null
     
     const toggleTheme = () => {
       isDark.value = !isDark.value
@@ -166,16 +184,6 @@ export default {
         document.documentElement.classList.remove('dark')
       }
     }
-    
-    onMounted(() => {
-      const savedTheme = localStorage.getItem('theme')
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      
-      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
-        isDark.value = true
-        updateTheme()
-      }
-    })
     
     const text = ref('')
     const selectedModel = ref('logistic')
@@ -202,7 +210,6 @@ export default {
       
       isLoading.value = true
       error.value = null
-      result.value = null
       
       try {
         const response = await fetch('http://localhost:5000/api/predict', {
@@ -220,11 +227,14 @@ export default {
           throw new Error('Failed to get prediction')
         }
         
-        result.value = await response.json()
+        const data = await response.json()
+        setTimeout(() => {
+          result.value = data
+          isLoading.value = false
+        }, 0)
       } catch (err) {
         error.value = 'Error: ' + (err.message || 'Failed to analyze text')
         console.error(err)
-      } finally {
         isLoading.value = false
       }
     }
@@ -250,18 +260,149 @@ export default {
       }
     }
     
+    const initNeuralNetwork = () => {
+      const canvas = neuralCanvas.value
+      if (!canvas) return
+
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return
+
+      const nodes = []
+      const connections = []
+      const nodeCount = Math.min(Math.floor(window.innerWidth / 100), 20)
+      
+      const startX = Math.random() * canvas.width * 0.8
+      const startY = Math.random() * canvas.height * 0.8
+      
+      for (let i = 0; i < nodeCount; i++) {
+        const randomOffsetX = (Math.random() - 0.5) * canvas.width * 0.4
+        const randomOffsetY = (Math.random() - 0.5) * canvas.height * 0.4
+        
+        nodes.push({
+          x: startX + randomOffsetX,
+          y: startY + randomOffsetY,
+          radius: Math.random() * 2 + 2,
+          vx: (Math.random() - 0.5) * 1.2,
+          vy: (Math.random() - 0.5) * 1.2,
+          color: isDark.value ? 
+            `rgba(${100 + Math.random() * 155}, ${100 + Math.random() * 155}, ${200 + Math.random() * 55}, 0.5)` : 
+            `rgba(${50 + Math.random() * 155}, ${100 + Math.random() * 155}, ${200 + Math.random() * 55}, 0.5)`
+        })
+      }
+      
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          if (Math.random() > 0.85) {
+            connections.push({
+              from: i,
+              to: j,
+              width: Math.random() * 0.5 + 0.2,
+              pulseSpeed: Math.random() * 0.05 + 0.01,
+              pulseOffset: Math.random() * Math.PI * 2,
+              color: isDark.value ? 'rgba(100, 150, 255, 0.15)' : 'rgba(70, 130, 230, 0.1)'
+            })
+          }
+        }
+      }
+      
+      const drawNodes = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+      
+        connections.forEach(connection => {
+          const fromNode = nodes[connection.from]
+          const toNode = nodes[connection.to]
+      
+          const dx = fromNode.x - toNode.x
+          const dy = fromNode.y - toNode.y
+          const distance = Math.sqrt(dx * dx + dy * dy)
+      
+          if (distance < canvas.width / 3) {
+            const time = Date.now() * connection.pulseSpeed + connection.pulseOffset
+            const pulse = Math.sin(time) * 0.5 + 0.5
+      
+            ctx.beginPath()
+            ctx.moveTo(fromNode.x, fromNode.y)
+            ctx.lineTo(toNode.x, toNode.y)
+            ctx.strokeStyle = connection.color
+            ctx.lineWidth = connection.width * pulse
+            ctx.stroke()
+      
+            const pulsePosition = (Math.sin(time / 2) + 1) / 2
+            const pulseX = fromNode.x + (toNode.x - fromNode.x) * pulsePosition
+            const pulseY = fromNode.y + (toNode.y - fromNode.y) * pulsePosition
+      
+            ctx.beginPath()
+            ctx.arc(pulseX, pulseY, connection.width * 2, 0, Math.PI * 2)
+            ctx.fillStyle = isDark.value ? 'rgba(120, 180, 255, 0.8)' : 'rgba(70, 130, 230, 0.6)'
+            ctx.fill()
+          }
+        })
+      
+        nodes.forEach(node => {
+          node.x += node.vx
+          node.y += node.vy
+      
+          if (node.x < 0 || node.x > canvas.width) node.vx *= -1
+          if (node.y < 0 || node.y > canvas.height) node.vy *= -1
+      
+          ctx.beginPath()
+          ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
+          ctx.fillStyle = node.color
+          ctx.fill()
+        })
+      
+        animationFrame = requestAnimationFrame(drawNodes)
+      }
+      
+      const resizeCanvas = () => {
+        canvas.width = window.innerWidth
+        canvas.height = window.innerHeight
+        drawNodes()
+      }
+      
+      resizeCanvas()
+      
+      window.addEventListener('resize', resizeCanvas)
+
+      return () => {
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame)
+        }
+        window.removeEventListener('resize', resizeCanvas)
+      }
+    }
+    
     onMounted(() => {
+      const savedTheme = localStorage.getItem('theme')
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+      
+      if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        isDark.value = true
+        updateTheme()
+      }
+      
       document.addEventListener('click', handleClickOutside)
       fetchModels()
+      
+      setTimeout(() => {
+        if (neuralCanvas.value) {
+          initNeuralNetwork()
+        }
+      }, 100)
     })
     
     onBeforeUnmount(() => {
       document.removeEventListener('click', handleClickOutside)
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame)
+      }
+      window.removeEventListener('resize', () => {})
     })
     
     return {
       isDark,
       toggleTheme,
+      neuralCanvas,
       
       text,
       selectedModel,
@@ -280,34 +421,6 @@ export default {
 </script>
 
 <style>
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  25% {
-    transform: translateY(-15px) rotate(5deg);
-  }
-  50% {
-    transform: translateY(5px) rotate(-5deg);
-  }
-  75% {
-    transform: translateY(-10px) rotate(3deg);
-  }
-}
-
-.particle {
-  animation: float infinite linear;
-}
-
-.particle-1 { animation-duration: 25s; }
-.particle-2 { animation-duration: 35s; }
-.particle-3 { animation-duration: 40s; }
-.particle-4 { animation-duration: 30s; }
-.particle-5 { animation-duration: 45s; }
-.particle-6 { animation-duration: 28s; }
-.particle-7 { animation-duration: 38s; }
-.particle-8 { animation-duration: 32s; }
-
 .loader-ring {
   position: absolute;
   width: 100%;
@@ -323,15 +436,14 @@ export default {
   100% { transform: rotate(360deg); }
 }
 
-.fade-slide-up-enter-active,
-.fade-slide-up-leave-active {
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.fade-slide-up-enter-from,
-.fade-slide-up-leave-to {
+.fade-enter-from,
+.fade-leave-to {
   opacity: 0;
-  transform: translateY(20px);
 }
 
 @keyframes dropdown {
@@ -347,5 +459,32 @@ export default {
 
 .animate-dropdown {
   animation: dropdown 0.2s ease-out forwards;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@media (max-width: 1023px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
 }
 </style>

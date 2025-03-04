@@ -1,6 +1,5 @@
 <template>
-    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all duration-300 transform hover:shadow-2xl relative overflow-hidden">
-      <!-- Background decoration -->
+    <div class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 transition-all duration-300 transform hover:shadow-2xl relative overflow-hidden h-full">
       <div class="absolute -right-16 -top-16 w-32 h-32 rounded-full opacity-10"
            :class="result.prediction === 'AI' ? 'bg-red-500 dark:bg-red-400' : 'bg-green-500 dark:bg-green-400'"></div>
       <div class="absolute -left-16 -bottom-16 w-32 h-32 rounded-full opacity-10"
