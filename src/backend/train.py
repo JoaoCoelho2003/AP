@@ -9,7 +9,7 @@ if not os.path.exists("datasets"):
 
 dataset = load_dataset("dmitva/human_ai_generated_text", split="train", streaming=True)
 
-def get_batch(dataset, batch_size=5000):
+def get_batch(dataset, batch_size=50000):
     texts, labels = [], []
     for i, example in enumerate(dataset):
         if "human_text" in example and "ai_text" in example:
@@ -23,11 +23,19 @@ def get_batch(dataset, batch_size=5000):
 
 train_texts, train_labels = get_batch(dataset)
 
+ai_count = sum(1 for text in train_labels if text == 1)
+human_count = sum(1 for text in train_labels if text == 0)
+print(f"AI texts: {ai_count}, Human texts: {human_count}")
+
 bow = BagOfWords()
 X_train = bow.fit_transform(train_texts)
 
 model = LogisticRegression(lr=0.01, epochs=1000)
 model.fit(X_train, train_labels)
+
+train_preds = model.predict(X_train)
+accuracy = np.mean(train_preds == train_labels)
+print(f"Training Accuracy: {accuracy}")
 
 model.save("models/logistic_weights.npz")
 bow.save("models/vocab.npy")
