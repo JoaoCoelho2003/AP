@@ -36,7 +36,8 @@ def get_models():
     return jsonify({
         'models': [
             {'id': 'logistic', 'name': 'Logistic Regression'},
-            {'id' : 'neuralnet', 'name': 'Deep Neural Network'}
+            {'id' : 'dnn', 'name': 'Deep Neural Network'},
+            {'id': 'rnn', 'name': 'Recurrent Neural Network'}
         ]
     })
 

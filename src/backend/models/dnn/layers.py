@@ -90,5 +90,24 @@ class DenseLayer (Layer):
         self.weights = weights["weights"]
         self.biases = weights["biases"]
 
+class DropoutLayer(Layer):
 
-    
+    def __init__(self, rate):
+        super().__init__()
+        self.rate = rate
+        self.mask = None
+
+    def forward_propagation(self, inputs, training):
+        if training:
+            self.mask = np.random.binomial(1, 1 - self.rate, size=inputs.shape)
+            return inputs * self.mask
+        return inputs * (1 - self.rate)
+
+    def backward_propagation(self, output_error):
+        return output_error * self.mask
+
+    def output_shape(self):
+        return self.input_shape()
+
+    def parameters(self):
+        return 0
