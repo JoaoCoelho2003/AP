@@ -46,11 +46,11 @@ if model_type == "dnn":
 elif model_type == "rnn":
     n_timesteps = X_train.shape[1]
     X_train_rnn = X_train.reshape((X_train.shape[0], n_timesteps, 1))
+    y_train_rnn = y_train.reshape((y_train.shape[0], 1, 1))
     
     model = RNN(n_units=10, input_shape=(n_timesteps, 1))
     model.initialize(SGD())
-    model.forward_propagation(X_train_rnn)
-    model.backward_propagation(np.random.rand(*X_train_rnn.shape))
+    model.train(X_train_rnn, y_train_rnn, batch_size=128, epochs=10)
 
 else:
     model = LogisticRegression(lr=0.01, epochs=300)

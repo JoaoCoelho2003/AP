@@ -29,7 +29,7 @@ def evaluate_text(model, vectorizer, text, model_type):
         probability = model.forward_propagation(X_new, training=False)[0][0]
     elif model_type == "rnn":
         X_new_rnn = X_new.reshape((X_new.shape[0], X_new.shape[1], 1))
-        probability = model.forward_propagation(X_new_rnn, training=False)[0][0]
+        probability = model.predict(X_new_rnn)[0][0]
     else:
         probability = model.predict_proba(X_new)[0]
 
