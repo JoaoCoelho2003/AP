@@ -13,3 +13,10 @@ class TanhActivation(ActivationLayer):
 
     def derivative(self, x: np.ndarray) -> np.ndarray:
         return 1 - np.tanh(x) ** 2
+
+class ReLUActivationRnn(ActivationLayer):
+    def activation_function(self, x: np.ndarray) -> np.ndarray:
+        return np.maximum(0, x)
+
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        return (x > 0).astype(float)
