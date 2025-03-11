@@ -89,7 +89,7 @@ class RNN(Layer):
         
         final_h = self.h[:, seq_length-1]
         output = final_h.dot(self.V.T) + self.b_v.T
-        self.output = 1 / (1 + np.exp(-np.clip(output, -15, 15)))
+        self.output = 1 / (1 + np.exp(-np.clip(output, -5, 5)))
         
         return self.output
     

@@ -31,11 +31,11 @@ def load_model(model_type):
     with open("preprocessed/word_to_idx.pkl", "rb") as f:
         word_to_idx = pickle.load(f)
     
-    if model_type == "embedding_rnn":
+    if model_type == "rnn":
         embedding_matrix = np.load("preprocessed/embedding_matrix.npy")
         
-        model = RNN(embedding_matrix=embedding_matrix)
-        model.load("trained_models/embedding_rnn_weights.npz")
+        model = RNN(embedding_matrix=embedding_matrix, hidden_size=128, dropout_rate=0.2, l2_reg=0.001)
+        model.load("trained_models/rnn_weights.npz")
         
         return model, word_to_idx, None
     
