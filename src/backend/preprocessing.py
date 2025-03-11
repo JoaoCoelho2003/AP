@@ -24,7 +24,7 @@ def tokenize_text(text):
     """Tokenize text into words"""
     return word_tokenize(text)
 
-def preprocess_dataset(dataset, max_samples=1000, keep_punctuation=False):
+def preprocess_dataset(dataset, max_samples=12000, keep_punctuation=False):
     """Process dataset and return texts and labels"""
     texts, labels = [], []
     tokenized_texts = []
