@@ -1,5 +1,13 @@
 # AP
 
+## Group Constitution
+
+- João Coelho - PG55954 - [JoaoCoelho2003](https://github.com/JoaoCoelho2003)
+- João Faria - PG55953 - [JoaoGDFaria](https://github.com/JoaoGDFaria)
+- Jorge Teixeira - PG55965 - [JorgeTeixeira20](https://github.com/JorgeTeixeira20) 
+- Rafael Alves - PG55999 - [19Rafa21](https://github.com/19Rafa21)
+
+
 ## Table of Contents
 - [Introduction](#introduction)
 - [Project Structure](#project-structure)
