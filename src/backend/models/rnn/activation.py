@@ -14,6 +14,14 @@ class TanhActivation(ActivationLayer):
     def derivative(self, x: np.ndarray) -> np.ndarray:
         return 1 - np.tanh(x) ** 2
 
+class SigmoidActivation(ActivationLayer):
+    def activation_function(self, x: np.ndarray) -> np.ndarray:
+        return 1 / (1 + np.exp(-np.clip(x, -15, 15)))
+
+    def derivative(self, x: np.ndarray) -> np.ndarray:
+        s = self.activation_function(x)
+        return s * (1 - s)
+
 class ReLUActivationRnn(ActivationLayer):
     def activation_function(self, x: np.ndarray) -> np.ndarray:
         return np.maximum(0, x)

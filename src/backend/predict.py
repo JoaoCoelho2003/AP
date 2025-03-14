@@ -2,149 +2,71 @@ import numpy as np
 import sys
 import pickle
 import os
-import re
-import string
-from nltk.tokenize import word_tokenize
-import nltk
 from models.logistic_regression import LogisticRegression
 from models.dnn.neuralnet import NeuralNetwork
 from models.rnn.rnn import RNN
-from gensim.models import Word2Vec, FastText
-
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt', quiet=True)
-
-def clean_text(text, keep_punctuation=False):
-    text = text.lower()
-    if not keep_punctuation:
-        text = re.sub(f"[{string.punctuation}]", "", text)
-    return text
-
-def tokenize_text(text):
-    return word_tokenize(text)
+from models.rnn.optimizers import AdamOptimizer
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 def load_model(model_type):
-    print(f"Loading {model_type} model...")
-    
-    with open("preprocessed/word_to_idx.pkl", "rb") as f:
-        word_to_idx = pickle.load(f)
-    
-    if model_type == "rnn":
-        embedding_matrix = np.load("preprocessed/embedding_matrix.npy")
-        
-        model = RNN(embedding_matrix=embedding_matrix, hidden_size=128, dropout_rate=0.2, l2_reg=0.001)
-        model.load("trained_models/rnn_weights.npz")
-        
-        return model, word_to_idx, None
-    
-    elif model_type == "dnn":
-        try:
-            embedding_model = FastText.load("preprocessed/embedding_model.model")
-        except:
-            print("Error loading embedding model. Make sure you've run improved_preprocessing.py first.")
-            sys.exit(1)
-        
+    if model_type == "dnn":
         model = NeuralNetwork()
         model.load("trained_models/dnn_weights.npz")
-        
-        return model, word_to_idx, embedding_model
-    
+    elif model_type == "rnn":
+        model = RNN(n_units=256, input_shape=(100, 50))
+        model.initialize(AdamOptimizer())
+        model.load("trained_models/rnn_weights.npz")
     else:
-        try:
-            embedding_model = FastText.load("preprocessed/embedding_model.model")
-        except:
-            print("Error loading embedding model. Make sure you've run improved_preprocessing.py first.")
-            sys.exit(1)
-        
         model = LogisticRegression()
         model.load("trained_models/logistic_weights.npz")
-        
-        return model, word_to_idx, embedding_model
 
-def preprocess_for_rnn(text, word_to_idx, max_length=100):
-    cleaned_text = clean_text(text, keep_punctuation=True)
-    tokens = tokenize_text(cleaned_text)
+    with open("preprocessed/vectorizer.pkl", "rb") as f:
+        vectorizer = pickle.load(f)
     
-    sequence = []
-    for token in tokens[:max_length]:
-        idx = word_to_idx.get(token, word_to_idx.get("<UNK>", 1))
-        sequence.append(idx)
-    
-    if len(sequence) < max_length:
-        sequence = sequence + [word_to_idx.get("<PAD>", 0)] * (max_length - len(sequence))
-    
-    return np.array([sequence])
+    return model, vectorizer
 
-def preprocess_for_dnn_logistic(text, embedding_model):
-    cleaned_text = clean_text(text, keep_punctuation=False)
-    tokens = tokenize_text(cleaned_text)
+def evaluate_text(model, vectorizer, text, model_type):
+    X_new = vectorizer.transform([text]).toarray()
     
-    token_embeddings = []
-    for token in tokens:
-        if token in embedding_model.wv:
-            token_embeddings.append(embedding_model.wv[token])
-    
-    if token_embeddings:
-        averaged_embedding = np.mean(token_embeddings, axis=0)
-    else:
-        averaged_embedding = np.zeros(embedding_model.vector_size)
-    
-    return np.array([averaged_embedding])
-
-def evaluate_text(model, word_to_idx, embedding_model, text, model_type):
-    if model_type == "rnn":
-        X_new = preprocess_for_rnn(text, word_to_idx)
-        probability = model.predict(X_new)
-        
-        if isinstance(probability, np.ndarray):
-            probability = probability.item()
-    
-    elif model_type == "dnn":
-        X_new = preprocess_for_dnn_logistic(text, embedding_model)
+    if model_type == "dnn":
         probability = model.forward_propagation(X_new, training=False)[0][0]
-    
+    elif model_type == "rnn":
+        seq_length = 50
+        n_features = X_new.shape[1]
+        
+        n_timesteps = n_features // seq_length
+        if n_features % seq_length != 0:
+            n_timesteps += 1
+        
+        if n_features % seq_length != 0:
+            pad_size = seq_length - (n_features % seq_length)
+            X_new_padded = np.pad(X_new, ((0, 0), (0, pad_size)), 'constant')
+        else:
+            X_new_padded = X_new
+        
+        X_new_rnn = X_new_padded.reshape((X_new.shape[0], n_timesteps, seq_length))
+        
+        predictions = model.forward_propagation(X_new_rnn)
+        probability = predictions[0, -1, 0]
+        
     else:
-        X_new = preprocess_for_dnn_logistic(text, embedding_model)
         probability = model.predict_proba(X_new)[0]
-    
+
     prediction = "AI" if probability >= 0.5 else "Human"
     return prediction, probability
 
-def main():
+if __name__ == "__main__":
     model_type = sys.argv[1] if len(sys.argv) > 1 else "logistic"
-    
-    valid_models = ["rnn", "dnn", "logistic"]
-    if model_type not in valid_models:
-        print(f"Invalid model type. Please choose from: {', '.join(valid_models)}")
-        sys.exit(1)
-    
-    model, word_to_idx, embedding_model = load_model(model_type)
-    
+    model, vectorizer = load_model(model_type)
+
     while True:
-        text = input("\nEnter text to evaluate (or 'q' to quit): ").strip()
-        
+        text = input("Enter text to evaluate (or 'q' to quit): ").strip()
         if text.lower() == 'q':
             break
-        
+            
         if not text:
             print("Please enter some text.")
             continue
-        
-        prediction, confidence = evaluate_text(model, word_to_idx, embedding_model, text, model_type)
-        
-        print(f"Prediction: {prediction}")
-        print(f"Confidence: {confidence:.4f} ({confidence*100:.1f}%)")
-        
-        if confidence > 0.8:
-            strength = "very confident"
-        elif confidence > 0.65:
-            strength = "moderately confident"
-        else:
-            strength = "somewhat uncertain"
-        
-        print(f"The model is {strength} that this text was written by {'an AI' if prediction == 'AI' else 'a human'}.")
-
-if __name__ == "__main__":
-    main()
+            
+        prediction, confidence = evaluate_text(model, vectorizer, text, model_type)
+        print(f"Prediction: {prediction} (Confidence: {confidence:.4f})")

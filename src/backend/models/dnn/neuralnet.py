@@ -4,7 +4,7 @@
 import os
 import numpy as np
 
-from models.dnn.layers import DenseLayer
+from models.dnn.layers import DenseLayer, DropoutLayer
 from models.dnn.losses import LossFunction, MeanSquaredError
 from models.dnn.optimizer import Optimizer
 from models.dnn.metrics import mse
@@ -12,20 +12,26 @@ from models.dnn.metrics import mse
 
 class NeuralNetwork:
  
-    def __init__(self, epochs = 100, batch_size = 128, optimizer = None,
-                 learning_rate = 0.01, momentum = 0.90, verbose = False, 
-                 loss = MeanSquaredError,
-                 metric:callable = mse):
+    def __init__(self, epochs=100, batch_size=128, optimizer=None,
+                 learning_rate=0.01, momentum=0.90, verbose=False, 
+                 loss=MeanSquaredError, metric: callable = mse,
+                 early_stopping=False, patience=10, lr_scheduler=False, lr_decay=0.1):
         self.epochs = epochs
         self.batch_size = batch_size
-        self.optimizer = Optimizer(learning_rate=learning_rate, momentum= momentum)
+        self.optimizer = Optimizer(learning_rate=learning_rate, momentum=momentum)
         self.verbose = verbose
         self.loss = loss()
         self.metric = metric
+        self.early_stopping = early_stopping
+        self.patience = patience
+        self.lr_scheduler = lr_scheduler
+        self.lr_decay = lr_decay
 
         # attributes
         self.layers = []
         self.history = {}
+        self.best_val_loss = np.inf
+        self.no_improvement_count = 0
 
     def add(self, layer):
         if self.layers:
@@ -35,7 +41,7 @@ class NeuralNetwork:
         self.layers.append(layer)
         return self
 
-    def get_mini_batches(self, X, y = None,shuffle = True):
+    def get_mini_batches(self, X, y=None, shuffle=True):
         n_samples = X.shape[0]
         indices = np.arange(n_samples)
         assert self.batch_size <= n_samples, "Batch size cannot be greater than the number of samples"
@@ -117,6 +123,22 @@ class NeuralNetwork:
                 self.history[epoch]['val_loss'] = val_loss
                 self.history[epoch]['val_metric'] = val_metric
 
+                # Early Stopping
+                if self.early_stopping:
+                    if val_loss < self.best_val_loss:
+                        self.best_val_loss = val_loss
+                        self.no_improvement_count = 0
+                    else:
+                        self.no_improvement_count += 1
+                        if self.no_improvement_count >= self.patience:
+                            if self.verbose:
+                                print(f"Early stopping at epoch {epoch}")
+                            break
+
+                # Learning Rate Scheduler
+                if self.lr_scheduler and epoch % self.patience == 0:
+                    self.optimizer.learning_rate *= self.lr_decay
+
                 # Print training + validation metrics
                 if self.verbose:
                     print(f"Epoch {epoch}/{self.epochs} - loss: {loss:.4f} - {metric_s} - val_loss: {val_loss:.4f} - val_{val_metric_s}")
@@ -125,7 +147,6 @@ class NeuralNetwork:
                     print(f"Epoch {epoch}/{self.epochs} - loss: {loss:.4f} - {metric_s}")
 
         return self
-
 
     def predict(self, dataset):
         return self.forward_propagation(dataset.X, training=False)
