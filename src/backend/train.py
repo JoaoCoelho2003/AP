@@ -15,18 +15,17 @@ class DatasetWrapper:
         self.X = X
         self.y = y
 
-X_train = np.load("preprocessed/X_train.npy")
-y_train = np.load("preprocessed/y_train.npy")
-X_val = np.load("preprocessed/X_val.npy")
-y_val = np.load("preprocessed/y_val.npy")
-
-print(f"Data shapes - X_train: {X_train.shape}, y_train: {y_train.shape}")
-print(f"Data shapes - X_val: {X_val.shape}, y_val: {y_val.shape}")
-print(f"Validation dataset class distribution: {{0: {np.sum(y_val == 0)}, 1: {np.sum(y_val == 1)}}}")
-
 model_type = sys.argv[1] if len(sys.argv) > 1 else "logistic"
 
 if model_type == "dnn":
+    X_train = np.load("preprocessed/X_train.npy")
+    y_train = np.load("preprocessed/y_train.npy")
+    X_val = np.load("preprocessed/X_val.npy")
+    y_val = np.load("preprocessed/y_val.npy")
+    
+    print(f"Data shapes - X_train: {X_train.shape}, y_train: {y_train.shape}")
+    print(f"Data shapes - X_val: {X_val.shape}, y_val: {y_val.shape}")
+    
     model = NeuralNetwork(
         epochs=100, 
         batch_size=128,
@@ -64,36 +63,37 @@ if model_type == "dnn":
     model.fit(dataset, val_dataset)
 
 elif model_type == "rnn":
-    seq_length = 50
-    n_features = X_train.shape[1]
+    X_train_seq = np.load("preprocessed/X_train_seq.npy")
+    y_train = np.load("preprocessed/y_train.npy")
+    X_val_seq = np.load("preprocessed/X_val_seq.npy")
+    y_val = np.load("preprocessed/y_val.npy")
+    embedding_matrix = np.load("preprocessed/embedding_matrix.npy")
     
-    n_timesteps = n_features // seq_length
-    if n_features % seq_length != 0:
-        n_timesteps += 1
-    
-    if n_features % seq_length != 0:
-        pad_size = seq_length - (n_features % seq_length)
-        X_train_padded = np.pad(X_train, ((0, 0), (0, pad_size)), 'constant')
-        X_val_padded = np.pad(X_val, ((0, 0), (0, pad_size)), 'constant')
-    else:
-        X_train_padded = X_train
-        X_val_padded = X_val
-    
-    X_train_rnn = X_train_padded.reshape((X_train.shape[0], n_timesteps, seq_length))
-    X_val_rnn = X_val_padded.reshape((X_val.shape[0], n_timesteps, seq_length))
+    print(f"Data shapes - X_train_seq: {X_train_seq.shape}, y_train: {y_train.shape}")
+    print(f"Data shapes - X_val_seq: {X_val_seq.shape}, y_val: {y_val.shape}")
+    print(f"Embedding matrix shape: {embedding_matrix.shape}")
     
     y_train_rnn = y_train.reshape(-1, 1)
     y_val_rnn = y_val.reshape(-1, 1)
     
-    print(f"RNN input shapes - X_train_rnn: {X_train_rnn.shape}, y_train_rnn: {y_train_rnn.shape}")
-    print(f"RNN input shapes - X_val_rnn: {X_val_rnn.shape}, y_val_rnn: {y_val_rnn.shape}")
+    model = RNN(
+        n_units=64,
+        input_shape=(X_train_seq.shape[0], X_train_seq.shape[1]),
+        embedding_matrix=embedding_matrix
+    )
     
-    model = RNN(n_units=256, input_shape=(n_timesteps, seq_length))
+    model.set_dropout(rate=0.5, use_dropout=True)
+    
     model.initialize(AdamOptimizer(lr=0.0005, beta1=0.9, beta2=0.999))
     
-    model.train(X_train_rnn, y_train_rnn, X_val_rnn, y_val_rnn, batch_size=16, epochs=15)
+    model.train(X_train_seq, y_train_rnn, X_val_seq, y_val_rnn, batch_size=16, epochs=15)
 
 else:
+    X_train = np.load("preprocessed/X_train.npy")
+    y_train = np.load("preprocessed/y_train.npy")
+    X_val = np.load("preprocessed/X_val.npy")
+    y_val = np.load("preprocessed/y_val.npy")
+    
     model = LogisticRegression(lr=0.01, epochs=300)
     model.fit(X_train, y_train)
 

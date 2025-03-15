@@ -8,7 +8,7 @@ class SGD:
         return param - self.learning_rate * grad
 
 class AdamOptimizer:
-    def __init__(self, lr: float = 0.001, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8, clip_value: float = 5.0):
+    def __init__(self, lr: float = 0.001, beta1: float = 0.9, beta2: float = 0.999, epsilon: float = 1e-8, clip_value: float = 1.0):
         self.lr = lr
         self.beta1 = beta1
         self.beta2 = beta2

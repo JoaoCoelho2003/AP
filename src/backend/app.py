@@ -19,11 +19,14 @@ def predict():
     if not text:
         return jsonify({'error': 'No text provided'}), 400
     
-    model, bow = load_model(model_type)
-    if bow is None:
+    model, vectorizer, word_to_idx, embedding_matrix = load_model(model_type)
+    
+    if model_type == "rnn" and (word_to_idx is None or embedding_matrix is None):
+        return jsonify({'error': 'RNN model components not found'}), 500
+    elif model_type != "rnn" and vectorizer is None:
         return jsonify({'error': 'Model or vectorizer not found'}), 500
 
-    prediction, confidence = evaluate_text(model, bow, text, model_type)
+    prediction, confidence = evaluate_text(model, vectorizer, word_to_idx, embedding_matrix, text, model_type)
     
     return jsonify({
         'prediction': prediction,
@@ -35,9 +38,9 @@ def predict():
 def get_models():
     return jsonify({
         'models': [
-            {'id' : 'logistic', 'name': 'Logistic Regression'},
-            {'id' : 'dnn', 'name': 'Deep Neural Network'},
-            {'id' : 'rnn', 'name': 'Recurrent Neural Network'}
+            {'id': 'logistic', 'name': 'Logistic Regression'},
+            {'id': 'dnn', 'name': 'Deep Neural Network'},
+            {'id': 'rnn', 'name': 'Recurrent Neural Network'}
         ]
     })
 

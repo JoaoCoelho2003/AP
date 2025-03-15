@@ -37,3 +37,4 @@ frontend/yarn.lock
 frontend/pnpm-lock.yaml
 backend/preprocessed/*
 backend/trained_models/*
+backend/models/*.model

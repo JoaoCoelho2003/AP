@@ -6,7 +6,8 @@ from models.rnn.layers import Layer
 from models.rnn.losses import BinaryCrossEntropy
 
 class RNN(Layer):
-    def __init__(self, n_units: int, activation: ActivationLayer = None, bptt_trunc: int = 5, input_shape: Tuple = None):
+    def __init__(self, n_units: int, activation: ActivationLayer = None, bptt_trunc: int = 5, 
+                 input_shape: Tuple = None, embedding_matrix: np.ndarray = None):
         self.input_shape = input_shape
         self.n_units = n_units
         self.activation = TanhActivation() if activation is None else activation
@@ -14,43 +15,91 @@ class RNN(Layer):
         self.bptt_trunc = bptt_trunc
         self.W, self.V, self.U = None, None, None
         self.loss_function = BinaryCrossEntropy()
+        
+        self.embedding_matrix = embedding_matrix
+        self.use_embeddings = embedding_matrix is not None
+        self.embedding_dim = embedding_matrix.shape[1] if self.use_embeddings else None
+        
+        self.l2_reg = 0.001
+        
+        self.dropout_rate = 0.5
+        self.use_dropout = True
+        
+        self.max_norm = 3.0
 
     def initialize(self, optimizer):
-        _, input_dim = self.input_shape
+        if self.use_embeddings:
+            input_dim = self.embedding_dim
+        else:
+            _, input_dim = self.input_shape
         
-        limit_u = np.sqrt(6 / (input_dim + self.n_units))
+        limit_u = np.sqrt(2 / (input_dim + self.n_units))
         self.U = np.random.uniform(-limit_u, limit_u, (self.n_units, input_dim))
         
-        limit_w = np.sqrt(6 / (self.n_units + self.n_units))
+        limit_w = np.sqrt(2 / (self.n_units + self.n_units))
         self.W = np.random.uniform(-limit_w, limit_w, (self.n_units, self.n_units))
         
-        limit_v = np.sqrt(6 / (self.n_units + 1))
+        limit_v = np.sqrt(2 / (self.n_units + 1))
         self.V = np.random.uniform(-limit_v, limit_v, (1, self.n_units))
         
         self.U_opt, self.V_opt, self.W_opt = deepcopy(optimizer), deepcopy(optimizer), deepcopy(optimizer)
 
+        self.dropout_rate = 0.3
+        self.use_dropout = True
+
     def forward_propagation(self, input: np.ndarray, training: bool = True) -> np.ndarray:
-        batch_size, timesteps, input_dim = input.shape
+        if self.use_embeddings:
+            batch_size, timesteps = input.shape
+            embedded_input = np.zeros((batch_size, timesteps, self.embedding_dim))
+            
+            for i in range(batch_size):
+                for j in range(timesteps):
+                    idx = input[i, j]
+                    if idx < len(self.embedding_matrix):
+                        embedded_input[i, j] = self.embedding_matrix[idx]
+            
+            batch_size, timesteps, _ = embedded_input.shape
+            self.embedded_input = embedded_input
+        else:
+            batch_size, timesteps, _ = input.shape
         
         self.state_input = np.zeros((batch_size, timesteps, self.n_units))
         self.states = np.zeros((batch_size, timesteps + 1, self.n_units))
         self.outputs = np.zeros((batch_size, timesteps, 1))
+        
+        # Store dropout masks for backpropagation
+        if training and self.use_dropout:
+            self.dropout_masks = []
 
         for t in range(timesteps):
-            self.state_input[:, t] = input[:, t].dot(self.U.T) + self.states[:, t - 1].dot(self.W.T)
+            if self.use_embeddings:
+                self.state_input[:, t] = self.embedded_input[:, t].dot(self.U.T) + self.states[:, t - 1].dot(self.W.T)
+            else:
+                self.state_input[:, t] = input[:, t].dot(self.U.T) + self.states[:, t - 1].dot(self.W.T)
+            
             self.states[:, t] = self.activation.activation_function(self.state_input[:, t])
+            
+            if training and self.use_dropout:
+                # Create and store dropout mask
+                dropout_mask = np.random.binomial(1, 1 - self.dropout_rate, size=self.states[:, t].shape) / (1 - self.dropout_rate)
+                self.dropout_masks.append(dropout_mask)
+                self.states[:, t] *= dropout_mask
+            
             self.outputs[:, t] = self.output_activation.activation_function(self.states[:, t].dot(self.V.T))
 
         return self.outputs
 
-    def backward_propagation(self, accum_grad: np.ndarray, input: np.ndarray) -> np.ndarray:
+    def backward_propagation(self, accum_grad: np.ndarray, input: np.ndarray = None) -> np.ndarray:
         batch_size, timesteps, _ = accum_grad.shape
         
         grad_U = np.zeros_like(self.U)
         grad_V = np.zeros_like(self.V)
         grad_W = np.zeros_like(self.W)
         
-        accum_grad_next = np.zeros_like(input)
+        if self.use_embeddings:
+            accum_grad_next = np.zeros_like(self.embedded_input)
+        else:
+            accum_grad_next = np.zeros_like(input)
         
         max_norm = 5.0
 
@@ -61,15 +110,23 @@ class RNN(Layer):
             
             grad_wrt_state = sigmoid_grad.dot(self.V) * self.activation.derivative(self.state_input[:, t])
             
-            accum_grad_next[:, t] = grad_wrt_state.dot(self.U)
-
-            for t_ in reversed(np.arange(max(0, t - self.bptt_trunc), t + 1)):
-                grad_U += grad_wrt_state.T.dot(input[:, t_])
+            if self.use_embeddings:
+                for t_ in reversed(np.arange(max(0, t - self.bptt_trunc), t + 1)):
+                    grad_U += grad_wrt_state.T.dot(self.embedded_input[:, t_])
+                    accum_grad_next[:, t_] = grad_wrt_state.dot(self.U)
+                    grad_W += grad_wrt_state.T.dot(self.states[:, t_ - 1])
+                    
+                    if t_ > 0:
+                        grad_wrt_state = grad_wrt_state.dot(self.W) * self.activation.derivative(self.state_input[:, t_ - 1])
+            else:
+                accum_grad_next[:, t] = grad_wrt_state.dot(self.U)
                 
-                grad_W += grad_wrt_state.T.dot(self.states[:, t_ - 1])
-                
-                if t_ > 0:
-                    grad_wrt_state = grad_wrt_state.dot(self.W) * self.activation.derivative(self.state_input[:, t_ - 1])
+                for t_ in reversed(np.arange(max(0, t - self.bptt_trunc), t + 1)):
+                    grad_U += grad_wrt_state.T.dot(input[:, t_])
+                    grad_W += grad_wrt_state.T.dot(self.states[:, t_ - 1])
+                    
+                    if t_ > 0:
+                        grad_wrt_state = grad_wrt_state.dot(self.W) * self.activation.derivative(self.state_input[:, t_ - 1])
 
         grad_U /= batch_size
         grad_V /= batch_size
@@ -92,9 +149,7 @@ class RNN(Layer):
         best_val_loss = float('inf')
         patience = 3
         patience_counter = 0
-        
-        initial_lr = self.U_opt.lr
-        
+                
         for epoch in range(epochs):
             indices = np.arange(num_samples)
             np.random.shuffle(indices)
@@ -110,12 +165,12 @@ class RNN(Layer):
                 batch_X = X_train_shuffled[i:end_idx]
                 batch_y = y_train_shuffled[i:end_idx]
 
-                predictions = self.forward_propagation(batch_X)
+                predictions = self.forward_propagation(batch_X, training=True)
                 
                 final_predictions = predictions[:, -1, :]
                 
                 batch_loss = self.loss_function.compute(batch_y, final_predictions)
-                epoch_loss += batch_loss * batch_y.shape[0]  # Weight by actual batch size
+                epoch_loss += batch_loss * batch_y.shape[0]
                 
                 predicted_classes = (final_predictions > 0.5).astype(int)
                 correct_predictions += np.sum(predicted_classes == batch_y.reshape(-1, 1))
@@ -126,12 +181,15 @@ class RNN(Layer):
                 output_grad = self.loss_function.derivative(batch_y, final_predictions)
                 accum_grad[:, -1, :] = output_grad
                 
-                self.backward_propagation(accum_grad, batch_X)
+                if self.use_embeddings:
+                    self.backward_propagation(accum_grad)
+                else:
+                    self.backward_propagation(accum_grad, batch_X)
 
             train_accuracy = correct_predictions / total_predictions
             avg_epoch_loss = epoch_loss / num_samples
 
-            val_predictions = self.forward_propagation(X_val)
+            val_predictions = self.forward_propagation(X_val, training=False)
             final_val_predictions = val_predictions[:, -1, :]
             val_loss = self.loss_function.compute(y_val, final_val_predictions)
             val_predicted_classes = (final_val_predictions > 0.5).astype(int)
@@ -163,15 +221,24 @@ class RNN(Layer):
         return np.prod(self.W.shape) + np.prod(self.U.shape) + np.prod(self.V.shape)
     
     def predict(self, X: np.ndarray) -> np.ndarray:
-        if X.ndim == 2:
+        if not self.use_embeddings and X.ndim == 2:
             X = X.reshape((X.shape[0], X.shape[1], 1))
 
-        predictions = self.forward_propagation(X)
+        predictions = self.forward_propagation(X, training=False)
         return (predictions[:, -1, :] > 0.5).astype(int)
 
     def save(self, file_path: str):
-        np.savez(file_path, U=self.U, V=self.V, W=self.W)
+        if self.use_embeddings:
+            np.savez(file_path, U=self.U, V=self.V, W=self.W, use_embeddings=np.array([True]))
+        else:
+            np.savez(file_path, U=self.U, V=self.V, W=self.W, use_embeddings=np.array([False]))
 
     def load(self, file_path: str):
         data = np.load(file_path)
         self.U, self.V, self.W = data['U'], data['V'], data['W']
+        if 'use_embeddings' in data:
+            self.use_embeddings = bool(data['use_embeddings'][0])
+
+    def set_dropout(self, rate=0.3, use_dropout=True):
+        self.dropout_rate = rate
+        self.use_dropout = use_dropout
