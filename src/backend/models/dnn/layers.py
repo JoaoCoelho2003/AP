@@ -1,12 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 from abc import ABCMeta, abstractmethod
 import numpy as np
 import copy
 
 class Layer(metaclass=ABCMeta):
-
     @abstractmethod
     def forward_propagation(self, input):
         raise NotImplementedError
@@ -32,13 +28,12 @@ class Layer(metaclass=ABCMeta):
     def layer_name(self):
         return self.__class__.__name__
     
-
-class DenseLayer (Layer):
-    
-    def __init__(self, n_units, input_shape = None):
+class DenseLayer(Layer):
+    def __init__(self, n_units, input_shape=None, l2_reg=0.001):
         super().__init__()
         self.n_units = n_units
         self._input_shape = input_shape
+        self.l2_reg = l2_reg
 
         self.input = None
         self.output = None
@@ -46,9 +41,9 @@ class DenseLayer (Layer):
         self.biases = None
         
     def initialize(self, optimizer):
-        # initialize weights from a 0 centered uniform distribution [-0.5, 0.5)
-        self.weights = np.random.rand(self.input_shape()[0], self.n_units) - 0.5
-        # initialize biases to 0
+        fan_in = self.input_shape()[0]
+        std = np.sqrt(2.0 / fan_in)
+        self.weights = np.random.normal(0, std, (self.input_shape()[0], self.n_units))
         self.biases = np.zeros((1, self.n_units))
         self.w_opt = copy.deepcopy(optimizer)
         self.b_opt = copy.deepcopy(optimizer)
@@ -63,22 +58,17 @@ class DenseLayer (Layer):
         return self.output
  
     def backward_propagation(self, output_error):
-         # computes the layer input error (the output error from the previous layer),
-         # dE/dX, to pass on to the previous layer
-         # SHAPES: (batch_size, input_columns) = (batch_size, output_columns) * (output_columns, input_columns)
-         input_error = np.dot(output_error, self.weights.T)
+        input_error = np.dot(output_error, self.weights.T)
+        weights_error = np.dot(self.input.T, output_error) + self.l2_reg * self.weights
+        bias_error = np.sum(output_error, axis=0, keepdims=True)
     
-         # computes the weight error: dE/dW = X.T * dE/dY
-         # SHAPES: (input_columns, output_columns) = (input_columns, batch_size) * (batch_size, output_columns)
-         weights_error = np.dot(self.input.T, output_error)
-         # computes the bias error: dE/dB = dE/dY
-         # SHAPES: (1, output_columns) = SUM over the rows of a matrix of shape (batch_size, output_columns)
-         bias_error = np.sum(output_error, axis=0, keepdims=True)
+        max_norm = 1.0
+        weights_error = np.clip(weights_error, -max_norm, max_norm)
+        bias_error = np.clip(bias_error, -max_norm, max_norm)
     
-         # updates parameters
-         self.weights = self.w_opt.update(self.weights, weights_error)
-         self.biases = self.b_opt.update(self.biases, bias_error)
-         return input_error
+        self.weights = self.w_opt.update(self.weights, weights_error)
+        self.biases = self.b_opt.update(self.biases, bias_error)
+        return input_error
  
     def output_shape(self):
          return (self.n_units,) 
@@ -91,7 +81,6 @@ class DenseLayer (Layer):
         self.biases = weights["biases"]
 
 class DropoutLayer(Layer):
-
     def __init__(self, rate):
         super().__init__()
         self.rate = rate
@@ -99,9 +88,9 @@ class DropoutLayer(Layer):
 
     def forward_propagation(self, inputs, training):
         if training:
-            self.mask = np.random.binomial(1, 1 - self.rate, size=inputs.shape)
+            self.mask = np.random.binomial(1, 1 - self.rate, size=inputs.shape) / (1 - self.rate)
             return inputs * self.mask
-        return inputs * (1 - self.rate)
+        return inputs
 
     def backward_propagation(self, output_error):
         return output_error * self.mask
@@ -111,3 +100,77 @@ class DropoutLayer(Layer):
 
     def parameters(self):
         return 0
+
+class BatchNormalizationLayer(Layer):
+    def __init__(self, epsilon=1e-8):
+        super().__init__()
+        self.epsilon = epsilon
+        self.gamma = None
+        self.beta = None
+        self.running_mean = None
+        self.running_var = None
+        
+    def initialize(self, optimizer):
+        input_shape = self.input_shape()
+        self.gamma = np.ones(input_shape)
+        self.beta = np.zeros(input_shape)
+        self.running_mean = np.zeros(input_shape)
+        self.running_var = np.ones(input_shape)
+        self.gamma_opt = copy.deepcopy(optimizer)
+        self.beta_opt = copy.deepcopy(optimizer)
+        
+    def forward_propagation(self, input, training):
+        self.input = input
+        
+        if training:
+            batch_mean = np.mean(input, axis=0)
+            batch_var = np.var(input, axis=0)
+            
+            self.running_mean = 0.9 * self.running_mean + 0.1 * batch_mean
+            self.running_var = 0.9 * self.running_var + 0.1 * batch_var
+            
+            self.x_norm = (input - batch_mean) / np.sqrt(batch_var + self.epsilon)
+            self.output = self.gamma * self.x_norm + self.beta
+        else:
+            x_norm = (input - self.running_mean) / np.sqrt(self.running_var + self.epsilon)
+            self.output = self.gamma * x_norm + self.beta
+            
+        return self.output
+        
+    def backward_propagation(self, output_error):
+        gamma_grad = np.sum(output_error * self.x_norm, axis=0)
+        beta_grad = np.sum(output_error, axis=0)
+        
+        self.gamma = self.gamma_opt.update(self.gamma, gamma_grad)
+        self.beta = self.beta_opt.update(self.beta, beta_grad)
+        
+        batch_size = self.input.shape[0]
+        x_mu = self.input - np.mean(self.input, axis=0)
+        std_inv = 1.0 / np.sqrt(np.var(self.input, axis=0) + self.epsilon)
+        
+        dx_norm = output_error * self.gamma
+        dvar = np.sum(dx_norm * x_mu, axis=0) * -0.5 * std_inv**3
+        dmean = np.sum(dx_norm * -std_inv, axis=0) + dvar * np.mean(-2.0 * x_mu, axis=0)
+        
+        input_error = (dx_norm * std_inv) + (dvar * 2 * x_mu / batch_size) + (dmean / batch_size)
+        return input_error
+    
+    def output_shape(self):
+        return self.input_shape()
+        
+    def parameters(self):
+        return np.prod(self.gamma.shape) + np.prod(self.beta.shape)
+    
+    def get_weights(self):
+        return {
+            "gamma": self.gamma,
+            "beta": self.beta,
+            "running_mean": self.running_mean,
+            "running_var": self.running_var
+        }
+    
+    def set_weights(self, weights):
+        self.gamma = weights["gamma"]
+        self.beta = weights["beta"]
+        self.running_mean = weights["running_mean"]
+        self.running_var = weights["running_var"]

@@ -3,12 +3,12 @@ import sys
 import os
 from models.logistic_regression import LogisticRegression
 from models.dnn.neuralnet import NeuralNetwork
-from models.dnn.layers import DenseLayer, DropoutLayer
+from models.dnn.layers import DenseLayer, DropoutLayer, BatchNormalizationLayer
 from models.dnn.metrics import mse, accuracy
 from models.dnn.activation import SigmoidActivation, ReLUActivation
-from models.dnn.losses import BinaryCrossEntropy
+from models.dnn.losses import FocalLoss
 from models.rnn.rnn import RNN
-from models.rnn.optimizers import SGD, AdamOptimizer
+from models.rnn.optimizers import AdamOptimizer
 
 class DatasetWrapper:
     def __init__(self, X, y):
@@ -22,23 +22,40 @@ y_val = np.load("preprocessed/y_val.npy")
 
 print(f"Data shapes - X_train: {X_train.shape}, y_train: {y_train.shape}")
 print(f"Data shapes - X_val: {X_val.shape}, y_val: {y_val.shape}")
+print(f"Validation dataset class distribution: {{0: {np.sum(y_val == 0)}, 1: {np.sum(y_val == 1)}}}")
 
 model_type = sys.argv[1] if len(sys.argv) > 1 else "logistic"
 
 if model_type == "dnn":
-    model = NeuralNetwork(epochs=25, batch_size=64, learning_rate=0.001, verbose=True,
-                          loss=BinaryCrossEntropy, metric=accuracy)
+    model = NeuralNetwork(
+        epochs=100, 
+        batch_size=128,
+        learning_rate=0.001,
+        momentum=0.9,
+        verbose=True,
+        loss=FocalLoss,
+        metric=accuracy,
+        early_stopping=True,
+        patience=5,
+        lr_scheduler=True,
+        lr_decay=0.2,
+        min_delta=0.0001,
+        mixup_alpha=0.2
+    )
     
     n_features = X_train.shape[1]
-    model.add(DenseLayer(64, (n_features,)))
-    model.add(ReLUActivation())
-    model.add(DropoutLayer(0.2))
     
-    model.add(DenseLayer(32))
+    model.add(DenseLayer(128, (n_features,), l2_reg=0.001))
+    model.add(BatchNormalizationLayer())
     model.add(ReLUActivation())
-    model.add(DropoutLayer(0.2))
+    model.add(DropoutLayer(0.3))
     
-    model.add(DenseLayer(1)) 
+    model.add(DenseLayer(64, l2_reg=0.001))
+    model.add(BatchNormalizationLayer())
+    model.add(ReLUActivation())
+    model.add(DropoutLayer(0.3))
+    
+    model.add(DenseLayer(1, l2_reg=0.001))
     model.add(SigmoidActivation())
 
     dataset = DatasetWrapper(X_train, y_train)

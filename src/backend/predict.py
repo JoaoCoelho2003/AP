@@ -29,7 +29,10 @@ def evaluate_text(model, vectorizer, text, model_type):
     X_new = vectorizer.transform([text]).toarray()
     
     if model_type == "dnn":
-        probability = model.forward_propagation(X_new, training=False)[0][0]
+        class DatasetWrapper:
+            def __init__(self, X):
+                self.X = X
+        probability = model.predict(DatasetWrapper(X_new))[0][0]
     elif model_type == "rnn":
         seq_length = 50
         n_features = X_new.shape[1]
