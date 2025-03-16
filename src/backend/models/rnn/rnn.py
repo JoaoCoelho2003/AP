@@ -67,7 +67,6 @@ class RNN(Layer):
         self.states = np.zeros((batch_size, timesteps + 1, self.n_units))
         self.outputs = np.zeros((batch_size, timesteps, 1))
         
-        # Store dropout masks for backpropagation
         if training and self.use_dropout:
             self.dropout_masks = []
 
@@ -80,7 +79,6 @@ class RNN(Layer):
             self.states[:, t] = self.activation.activation_function(self.state_input[:, t])
             
             if training and self.use_dropout:
-                # Create and store dropout mask
                 dropout_mask = np.random.binomial(1, 1 - self.dropout_rate, size=self.states[:, t].shape) / (1 - self.dropout_rate)
                 self.dropout_masks.append(dropout_mask)
                 self.states[:, t] *= dropout_mask
