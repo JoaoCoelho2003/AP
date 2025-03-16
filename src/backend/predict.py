@@ -1,18 +1,15 @@
 import numpy as np
 import sys
 import pickle
-import os
 from models.logistic_regression import LogisticRegression
 from models.dnn.neuralnet import NeuralNetwork
 from models.rnn.rnn import RNN
 from models.rnn.optimizers import AdamOptimizer
-from sklearn.feature_extraction.text import TfidfVectorizer
 import re
 import string
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 import nltk
-from gensim.models import Word2Vec
 
 nltk.download("punkt", quiet=True)
 nltk.download("stopwords", quiet=True)
