@@ -11,6 +11,7 @@
 ## Table of Contents
 - [Introduction](#introduction)
 - [Project Structure](#project-structure)
+- [How to Use](#how-to-use)
 - [Technologies Used](#technologies-used)
 - [Dataset](#dataset)
 - [Implemented Models](#implemented-models)
@@ -23,6 +24,20 @@ AP is a deep learning project for the course, aiming to develop AI models that c
 The repository is organized into two main folders:
 - **`frontend/`** – Built using Vue 3 with JavaScript.
 - **`backend/`** – Developed in Python, utilizing libraries like NumPy, scikit-learn, and other auxiliary tools.
+    - **`datasets/`** - Datasets made available by the teachers to evaluate our models
+    - **`models/`** - Base code for our models (Logistic Regression, DNN and RNN)
+    - **`preprocessed/`** - Processed data and pre-trained models, ready to be used.
+    - **`stats/`** - Used to compare model results with test dataset.
+    - **`Submissao1/`** - Documents (notebook and CSVs) for the first evaluation phase of this work.
+    - **`trained_models/`** - Pre-trained models, ready to be used.
+    - **`app.py`** - Flask application provides an API for predicting whether a given text is AI-generated or human-written. It includes endpoints for making predictions and listing available models. Used on the frontend.
+    - **`predict.py`** - Loads a trained model and evaluates new text inputs to predict whether they are AI-generated or human-written. It supports Logistic Regression, DNN, and RNN models and provides a command-line interface for user input.
+    - **`preprocessing.py`** - Preprocesses the dataset by cleaning and tokenizing text, balancing the dataset, vectorizing text using TF-IDF, and training a Word2Vec model. It saves the processed data and models for later use in training and prediction. 
+    - **`train.py`** - Handles the training of different models (Logistic Regression, DNN, RNN) based on the command-line argument provided. It loads preprocessed data, initializes the appropriate model, trains it, and saves the trained model weights.
+
+## How to use
+
+You can either just run the frontend and the backend (you need to have the models on **`trained_models/`**), so that it's possible to load them or run each model alone using the following commands ```python preprocessing.py``` followed by ```python train.py <model name>``` and then ```python predict.py <model name>```.
 
 ## Technologies Used
 ### Frontend
