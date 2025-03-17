@@ -26,7 +26,7 @@ The repository is organized into two main folders:
 - **`backend/`** – Developed in Python, utilizing libraries like NumPy, scikit-learn, and other auxiliary tools.
     - **`datasets/`** - Datasets made available by the teachers to evaluate our models
     - **`models/`** - Base code for our models (Logistic Regression, DNN and RNN)
-    - **`preprocessed/`** - Processed data and pre-trained models, ready to be used.
+    - **`preprocessed/`** - Processed data, ready to be used.
     - **`stats/`** - Used to compare model results with test dataset.
     - **`Submissao1/`** - Documents (notebook and CSVs) for the first evaluation phase of this work.
     - **`trained_models/`** - Pre-trained models, ready to be used.
