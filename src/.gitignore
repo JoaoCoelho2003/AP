@@ -35,6 +35,8 @@ backend/submissions/results/*.csv
 frontend/package-lock.json
 frontend/yarn.lock
 frontend/pnpm-lock.yaml
-backend/preprocessed/*
+backend/preprocessed/*.npy
+backend/preprocessed/*.model
+backend/preprocessed/*.pkl
 backend/trained_models/*.npz
 backend/models/*.model
