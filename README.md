@@ -12,8 +12,7 @@
 - [Introduction](#introduction)
 - [Project Structure](#project-structure)
 - [How to Use](#how-to-use)
-- [Technologies Used](#technologies-used)
-- [Dataset](#dataset)
+- [Datasets](#datasets)
 - [Implemented Models](#implemented-models)
 - [Future Plans](#future-plans)
 
@@ -21,7 +20,7 @@
 AP is a deep learning project for the course, aiming to develop AI models that can distinguish between AI-generated and human-written text. The project includes a frontend for interaction and a backend handling the model inference.
 
 ## Project Structure
-The repository is organized into two main folders:
+The repository is organized into two main folders (besides, of course, the `src` folder):
 - **`frontend/`** – Built using Vue 3 with JavaScript.
 - **`backend/`** – Developed in Python, utilizing libraries like NumPy, scikit-learn, and other auxiliary tools.
     - **`datasets/`** - Datasets made available by the teachers to evaluate our models
@@ -37,29 +36,59 @@ The repository is organized into two main folders:
 
 ## How to use
 
-You can either just run the frontend and the backend (you need to have the models on **`trained_models/`**), so that it's possible to load them or run each model alone using the following commands ```python preprocessing.py``` followed by ```python train.py <model name>``` and then ```python predict.py <model name>```.
+You can either run the frontend and backend together (full application) or run each model separately.
 
-## Technologies Used
-### Frontend
-- Vue 3
-- JavaScript
+### Full Application
 
-### Backend
-- Python
-- NumPy
-- Scikit-learn
-- Hugging Face `datasets`
-
-## Dataset
-The project uses a dataset from Hugging Face: [`dmitva/human_ai_generated_text`](https://huggingface.co/datasets/dmitva/human_ai_generated_text), which contains human-written and AI-generated text samples.  
-
-The dataset is loaded as a streaming dataset in the backend:
-
-```python
-from datasets import load_dataset
-
-dataset = load_dataset("dmitva/human_ai_generated_text", split="train", streaming=True)
+1. Ensure that the trained models are available in the `trained_models/` directory.
+2. Navigate to the `frontend/` folder and run:
+```sh
+$ npm install  
+$ npm run dev  
+``` 
+3. Navigate to the `backend/` folder and run:
+```sh
+$ python3 app.py
 ```
+4. Access the frontend at `http://localhost:5173/` and interact with the application.
+
+### Running Models Individually
+
+If you prefer to run each model separately (with no frontend), go to the `backend/`directory and run the following commands:
+
+1. Preprocess the datasets:
+```sh
+$ python3 preprocessing.py
+```
+2. Train a model:
+```sh
+$ python3 train.py <model_name>
+```
+3. Predict using a trained model:
+```sh
+$ python3 predict.py <model_name>
+```
+
+Replace `<model_name>` with the desired model: `logistic`, `dnn`, or `rnn`.
+
+## Datasets
+The project uses two datasets:
+
+1. **Hugging Face Dataset**: [`dmitva/human_ai_generated_text`](https://huggingface.co/datasets/dmitva/human_ai_generated_text), which contains human-written and AI-generated text samples. The dataset is loaded as a streaming dataset in the backend:
+
+    ```python
+    from datasets import load_dataset
+
+    dataset = load_dataset("dmitva/human_ai_generated_text", split="train", streaming=True)
+    ```
+
+2. **Validation Dataset**: [`andythetechnerd03/AI-human-text`](https://huggingface.co/datasets/andythetechnerd03/AI-human-text), used for validation purposes. This dataset is also loaded as a streaming dataset:
+
+    ```python
+    from datasets import load_dataset
+
+    validation_dataset = load_dataset("andythetechnerd03/AI-human-text", split="train", streaming=True)
+    ```
 
 ## Implemented Models
 Currently, the backend supports the following models:
