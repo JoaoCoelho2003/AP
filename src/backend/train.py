@@ -10,6 +10,8 @@ from models.dnn.losses import FocalLoss
 from models.rnn.rnn import RNN
 from models.rnn.optimizers import AdamOptimizer
 
+np.random.seed(2025)
+
 class DatasetWrapper:
     def __init__(self, X, y):
         self.X = X
@@ -29,7 +31,7 @@ if model_type == "dnn":
     model = NeuralNetwork(
         epochs=100, 
         batch_size=128,
-        learning_rate=0.001,
+        learning_rate=0.0001,
         momentum=0.9,
         verbose=True,
         loss=FocalLoss,
@@ -44,17 +46,17 @@ if model_type == "dnn":
     
     n_features = X_train.shape[1]
     
-    model.add(DenseLayer(128, (n_features,), l2_reg=0.001))
+    model.add(DenseLayer(32, (n_features,), l2_reg=0.05))
     model.add(BatchNormalizationLayer())
     model.add(ReLUActivation())
-    model.add(DropoutLayer(0.3))
+    model.add(DropoutLayer(0.5))
     
-    model.add(DenseLayer(64, l2_reg=0.001))
+    model.add(DenseLayer(16, l2_reg=0.05))
     model.add(BatchNormalizationLayer())
     model.add(ReLUActivation())
-    model.add(DropoutLayer(0.3))
+    model.add(DropoutLayer(0.5))
     
-    model.add(DenseLayer(1, l2_reg=0.001))
+    model.add(DenseLayer(1, l2_reg=0.05))
     model.add(SigmoidActivation())
 
     dataset = DatasetWrapper(X_train, y_train)
