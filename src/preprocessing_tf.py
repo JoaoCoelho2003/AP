@@ -4,6 +4,8 @@ import pickle
 import os
 import string
 import tensorflow as tf
+import requests
+import zipfile
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 from datasets import load_dataset
@@ -116,9 +118,17 @@ def load_glove_embeddings(tokenizer, embedding_dim=100):
     print("Loading GloVe embeddings...")
     
     glove_path = f'glove.6B.{embedding_dim}d.txt'
+    glove_zip_path = 'glove.6B.zip'
     if not os.path.exists(glove_path):
-        os.system(f'wget http://nlp.stanford.edu/data/glove.6B.zip')
-        os.system('unzip glove.6B.zip')
+        print("Downloading GloVe embeddings...")
+        url = 'https://nlp.stanford.edu/data/glove.6B.zip'
+        response = requests.get(url)
+        with open(glove_zip_path, 'wb') as f:
+            f.write(response.content)
+        
+        print("Extracting GloVe embeddings...")
+        with zipfile.ZipFile(glove_zip_path, 'r') as zip_ref:
+            zip_ref.extractall()
     
     embeddings_index = {}
     with open(glove_path, encoding='utf-8') as f:
