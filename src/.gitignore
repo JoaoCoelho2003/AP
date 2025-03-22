@@ -28,5 +28,12 @@ Submissao1/results/*.csv
 preprocessed/*.npy
 preprocessed/*.model
 preprocessed/*.pkl
+evaluation/*.png
+evaluation/*.csv
+glove.*.txt
+glove.*.zip
+preprocessed_tf/*.npy
+preprocessed_tf/*.model
+preprocessed_tf/*.pkl
 trained_models/*.npz
 models/*.model
