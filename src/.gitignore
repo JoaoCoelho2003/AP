@@ -5,14 +5,6 @@ __pycache__/
 *.pyd
 .env
 venv/
-backend/models/logistic_weights.npz
-backend/models/vocab.npy
-
-# Node.js & Frontend
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
-frontend/.output/
 
 # Logs
 npm-debug.log*
@@ -27,16 +19,14 @@ yarn-error.log*
 *.swn
 
 # Build & Dependencies
-backend/__pycache__/
-backend/models/__pycache__/
-backend/models/*.npz
-backend/models/*.npy
-backend/submissions/results/*.csv
-frontend/package-lock.json
-frontend/yarn.lock
-frontend/pnpm-lock.yaml
-backend/preprocessed/*.npy
-backend/preprocessed/*.model
-backend/preprocessed/*.pkl
-backend/trained_models/*.npz
-backend/models/*.model
+__pycache__/
+models/__pycache__/
+models/*.npz
+models/*.npy
+stats/results/*.csv
+Submissao1/results/*.csv
+preprocessed/*.npy
+preprocessed/*.model
+preprocessed/*.pkl
+trained_models/*.npz
+models/*.model
