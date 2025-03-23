@@ -225,4 +225,6 @@ if __name__ == "__main__":
             print("Error: Google Gemini API key is required for this script.")
             sys.exit(1)
 
-    generate_alternating_dataset(main_topics, api_key=api_key)
+    generate_alternating_dataset(
+        main_topics, api_key=api_key, filename="./datasets/custom_dataset.csv"
+    )
