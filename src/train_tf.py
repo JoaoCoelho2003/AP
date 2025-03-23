@@ -8,13 +8,14 @@ from sklearn.metrics import classification_report, confusion_matrix, roc_curve, 
 import seaborn as sns
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
 from models.tensorflowModels.dnn_model import train_dnn_model
 from models.tensorflowModels.rnn_model import train_rnn_model
 from models.tensorflowModels.transformer_model import train_transformer_model
 from models.tensorflowModels.bert_model import train_bert_model
 from models.tensorflowModels.ensemble_model import train_ensemble_model
+
 
 def load_data(data_dir="preprocessed_tf"):
     train_sequences = np.load(os.path.join(data_dir, "train_sequences.npy"))
@@ -68,8 +69,9 @@ def load_data(data_dir="preprocessed_tf"):
         "test_texts": test_texts,
         "train_features": train_features,
         "test_features": test_features,
-        "val_features": val_features
+        "val_features": val_features,
     }
+
 
 def evaluate_model(model, X_test, y_test, model_name):
     os.makedirs("evaluation", exist_ok=True)
@@ -79,11 +81,17 @@ def evaluate_model(model, X_test, y_test, model_name):
 
     plt.figure(figsize=(8, 6))
     cm = confusion_matrix(y_test, y_pred)
-    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
-                xticklabels=['Human', 'AI'], yticklabels=['Human', 'AI'])
-    plt.title(f'{model_name} - Confusion Matrix')
-    plt.ylabel('True Label')
-    plt.xlabel('Predicted Label')
+    sns.heatmap(
+        cm,
+        annot=True,
+        fmt="d",
+        cmap="Blues",
+        xticklabels=["Human", "AI"],
+        yticklabels=["Human", "AI"],
+    )
+    plt.title(f"{model_name} - Confusion Matrix")
+    plt.ylabel("True Label")
+    plt.xlabel("Predicted Label")
     plt.tight_layout()
     plt.savefig(f"evaluation/{model_name}_confusion_matrix.png")
     plt.close()
@@ -95,6 +103,7 @@ def evaluate_model(model, X_test, y_test, model_name):
         "accuracy": (y_pred == y_test).mean(),
         "auc": roc_auc,
     }
+
 
 def train_models():
     data = load_data()
@@ -123,58 +132,130 @@ def train_models():
 
     print("\n=== Training LSTM Model ===")
     lstm_model, lstm_history = train_rnn_model(
-        train_sequences, train_labels,
-        val_sequences, val_labels,
-        vocab_size, embedding_dim, embedding_matrix, max_seq_length,
-        model_type='lstm',
-        model_path='trained_models/tensorflow/lstm_model.h5'
+        train_sequences,
+        train_labels,
+        val_sequences,
+        val_labels,
+        vocab_size,
+        embedding_dim,
+        embedding_matrix,
+        max_seq_length,
+        model_type="lstm",
+        model_path="trained_models/tensorflow/lstm_model.h5",
+    )
+    lstm_model.compile(
+        optimizer="adam",
+        loss="binary_crossentropy",
+        metrics=[
+            "accuracy",
+            tf.keras.metrics.AUC(),
+            tf.keras.metrics.Precision(),
+            tf.keras.metrics.Recall(),
+        ],
     )
     lstm_metrics = evaluate_model(lstm_model, test_sequences, test_labels, "LSTM")
-    print(f"LSTM Model - Test Accuracy: {lstm_metrics['accuracy']:.4f}, AUC: {lstm_metrics['auc']:.4f}")
+    print(
+        f"LSTM Model - Test Accuracy: {lstm_metrics['accuracy']:.4f}, AUC: {lstm_metrics['auc']:.4f}"
+    )
 
     print("\n=== Training GRU Model ===")
     gru_model, gru_history = train_rnn_model(
-        train_sequences, train_labels,
-        val_sequences, val_labels,
-        vocab_size, embedding_dim, embedding_matrix, max_seq_length,
-        model_type='gru',
-        model_path='trained_models/tensorflow/gru_model.h5'
+        train_sequences,
+        train_labels,
+        val_sequences,
+        val_labels,
+        vocab_size,
+        embedding_dim,
+        embedding_matrix,
+        max_seq_length,
+        model_type="gru",
+        model_path="trained_models/tensorflow/gru_model.h5",
+    )
+
+    gru_model.compile(
+        optimizer="adam",
+        loss="binary_crossentropy",
+        metrics=[
+            "accuracy",
+            tf.keras.metrics.AUC(),
+            tf.keras.metrics.Precision(),
+            tf.keras.metrics.Recall(),
+        ],
     )
     gru_metrics = evaluate_model(gru_model, test_sequences, test_labels, "GRU")
-    print(f"GRU Model - Test Accuracy: {gru_metrics['accuracy']:.4f}, AUC: {gru_metrics['auc']:.4f}")
+    print(
+        f"GRU Model - Test Accuracy: {gru_metrics['accuracy']:.4f}, AUC: {gru_metrics['auc']:.4f}"
+    )
 
     print("\n=== Training Transformer Model ===")
     transformer_model, transformer_history = train_transformer_model(
-        train_sequences, train_labels,
-        val_sequences, val_labels,
-        vocab_size, embedding_dim, embedding_matrix, max_seq_length,
-        model_path='trained_models/tensorflow/transformer_model.h5'
+        train_sequences,
+        train_labels,
+        val_sequences,
+        val_labels,
+        vocab_size,
+        embedding_dim,
+        embedding_matrix,
+        max_seq_length,
+        model_path="trained_models/tensorflow/transformer_model.h5",
     )
-    transformer_metrics = evaluate_model(transformer_model, test_sequences, test_labels, "Transformer")
-    print(f"Transformer Model - Test Accuracy: {transformer_metrics['accuracy']:.4f}, AUC: {transformer_metrics['auc']:.4f}")
+    transformer_model.compile(
+        optimizer="adam",
+        loss="binary_crossentropy",
+        metrics=[
+            "accuracy",
+            tf.keras.metrics.AUC(),
+            tf.keras.metrics.Precision(),
+            tf.keras.metrics.Recall(),
+        ],
+    )
+    transformer_metrics = evaluate_model(
+        transformer_model, test_sequences, test_labels, "Transformer"
+    )
+    print(
+        f"Transformer Model - Test Accuracy: {transformer_metrics['accuracy']:.4f}, AUC: {transformer_metrics['auc']:.4f}"
+    )
 
     if train_features is not None:
         print("\n=== Training DNN Model ===")
         dnn_model, dnn_history = train_dnn_model(
-            train_features, train_labels,
-            val_features, val_labels,
-            model_path='trained_models/tensorflow/dnn_model.h5'
+            train_features,
+            train_labels,
+            val_features,
+            val_labels,
+            model_path="trained_models/tensorflow/dnn_model.h5",
+        )
+        dnn_model.compile(
+            optimizer="adam",
+            loss="binary_crossentropy",
+            metrics=[
+                "accuracy",
+                tf.keras.metrics.AUC(),
+                tf.keras.metrics.Precision(),
+                tf.keras.metrics.Recall(),
+            ],
         )
         dnn_metrics = evaluate_model(dnn_model, test_features, test_labels, "DNN")
-        print(f"DNN Model - Test Accuracy: {dnn_metrics['accuracy']:.4f}, AUC: {dnn_metrics['auc']:.4f}")
+        print(
+            f"DNN Model - Test Accuracy: {dnn_metrics['accuracy']:.4f}, AUC: {dnn_metrics['auc']:.4f}"
+        )
     else:
         print("\n=== Skipping DNN Model (no features available) ===")
         dnn_model = None
         dnn_metrics = {"accuracy": 0, "auc": 0}
 
     print("\n=== Training Ensemble Model ===")
-    models_to_ensemble = [m for m in [lstm_model, gru_model, transformer_model, dnn_model] if m is not None]
-    
+    models_to_ensemble = [
+        m
+        for m in [lstm_model, gru_model, transformer_model, dnn_model]
+        if m is not None
+    ]
+
     if len(models_to_ensemble) > 1:
         X_trains = []
         X_vals = []
         X_tests = []
-        
+
         for model in models_to_ensemble:
             if model == dnn_model and dnn_model is not None:
                 X_trains.append(train_features)
@@ -186,25 +267,52 @@ def train_models():
                 X_tests.append(test_sequences)
 
         ensemble_model, ensemble_history = train_ensemble_model(
-            X_trains, train_labels,
-            X_vals, val_labels,
+            X_trains,
+            train_labels,
+            X_vals,
+            val_labels,
             models_to_ensemble,
-            model_path='trained_models/tensorflow/ensemble_model.h5'
+            model_path="trained_models/tensorflow/ensemble_model.h5",
         )
-        ensemble_metrics = evaluate_model(ensemble_model, X_tests, test_labels, "Ensemble")
-        print(f"Ensemble Model - Test Accuracy: {ensemble_metrics['accuracy']:.4f}, AUC: {ensemble_metrics['auc']:.4f}")
+        ensemble_model.compile(
+            optimizer="adam",
+            loss="binary_crossentropy",
+            metrics=[
+                "accuracy",
+                tf.keras.metrics.AUC(),
+                tf.keras.metrics.Precision(),
+                tf.keras.metrics.Recall(),
+            ],
+        )
+        ensemble_metrics = evaluate_model(
+            ensemble_model, X_tests, test_labels, "Ensemble"
+        )
+        print(
+            f"Ensemble Model - Test Accuracy: {ensemble_metrics['accuracy']:.4f}, AUC: {ensemble_metrics['auc']:.4f}"
+        )
     else:
         print("Not enough models to create an ensemble.")
         ensemble_metrics = {"accuracy": 0, "auc": 0}
 
     print("\n=== Model Performance Summary ===")
-    print(f"LSTM Model - Accuracy: {lstm_metrics['accuracy']:.4f}, AUC: {lstm_metrics['auc']:.4f}")
-    print(f"GRU Model - Accuracy: {gru_metrics['accuracy']:.4f}, AUC: {gru_metrics['auc']:.4f}")
-    print(f"Transformer Model - Accuracy: {transformer_metrics['accuracy']:.4f}, AUC: {transformer_metrics['auc']:.4f}")
+    print(
+        f"LSTM Model - Accuracy: {lstm_metrics['accuracy']:.4f}, AUC: {lstm_metrics['auc']:.4f}"
+    )
+    print(
+        f"GRU Model - Accuracy: {gru_metrics['accuracy']:.4f}, AUC: {gru_metrics['auc']:.4f}"
+    )
+    print(
+        f"Transformer Model - Accuracy: {transformer_metrics['accuracy']:.4f}, AUC: {transformer_metrics['auc']:.4f}"
+    )
     if dnn_model is not None:
-        print(f"DNN Model - Accuracy: {dnn_metrics['accuracy']:.4f}, AUC: {dnn_metrics['auc']:.4f}")
+        print(
+            f"DNN Model - Accuracy: {dnn_metrics['accuracy']:.4f}, AUC: {dnn_metrics['auc']:.4f}"
+        )
     if len(models_to_ensemble) > 1:
-        print(f"Ensemble Model - Accuracy: {ensemble_metrics['accuracy']:.4f}, AUC: {ensemble_metrics['auc']:.4f}")
+        print(
+            f"Ensemble Model - Accuracy: {ensemble_metrics['accuracy']:.4f}, AUC: {ensemble_metrics['auc']:.4f}"
+        )
+
 
 if __name__ == "__main__":
     train_models()

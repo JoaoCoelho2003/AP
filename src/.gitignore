@@ -35,5 +35,7 @@ glove.*.zip
 preprocessed_tf/*.npy
 preprocessed_tf/*.model
 preprocessed_tf/*.pkl
-trained_models/*.npz
+trained_models/numpy/*.npz
+trained_models/tensorflow/*.h5
+trained_models/tensorflow/*.model
 models/*.model
