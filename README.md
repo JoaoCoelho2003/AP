@@ -20,19 +20,26 @@
 AP is a deep learning project for the course, aiming to develop AI models that can distinguish between AI-generated and human-written text. The project includes a frontend for interaction and a backend handling the model inference.
 
 ## Project Structure
-The repository is organized into two main folders (besides, of course, the `src` folder):
-- **`frontend/`** – Built using Vue 3 with JavaScript.
-- **`backend/`** – Developed in Python, utilizing libraries like NumPy, scikit-learn, and other auxiliary tools.
-    - **`datasets/`** - Datasets made available by the teachers to evaluate our models
-    - **`models/`** - Base code for our models (Logistic Regression, DNN and RNN)
-    - **`preprocessed/`** - Processed data, ready to be used.
-    - **`stats/`** - Used to compare model results with test dataset.
-    - **`Submissao1/`** - Documents (notebook and CSVs) for the first evaluation phase of this work.
-    - **`trained_models/`** - Pre-trained models, ready to be used.
-    - **`app.py`** - Flask application provides an API for predicting whether a given text is AI-generated or human-written. It includes endpoints for making predictions and listing available models. Used on the frontend.
-    - **`predict.py`** - Loads a trained model and evaluates new text inputs to predict whether they are AI-generated or human-written. It supports Logistic Regression, DNN, and RNN models and provides a command-line interface for user input.
-    - **`preprocessing.py`** - Preprocesses the dataset by cleaning and tokenizing text, balancing the dataset, vectorizing text using TF-IDF, and training a Word2Vec model. It saves the processed data and models for later use in training and prediction. 
-    - **`train.py`** - Handles the training of different models (Logistic Regression, DNN, RNN) based on the command-line argument provided. It loads preprocessed data, initializes the appropriate model, trains it, and saves the trained model weights.
+The repository is organized inside `src` folder:
+- **`datasets/`** - Datasets made available by the teachers to evaluate our models.
+    - **`clean/`** - Processed datasets put together.
+- **`models/`** - Base code for our models divided in two folders:
+    - **`numpyModels/`** - Models written using the numpy library (Logistic Regression, DNN and RNN)
+    - **`tensorflowModels/`** - Models written using the tensorflow library (Transformer, RNN [LSTM & GRU], DNN and BERT)
+- **`preprocessed/`** - Processed data, ready to be used for numpy models.
+- **`preprocessed_tf/`** - Processed data, ready to be used for tensorflow models.
+- **`stats/`** - Used to compare model results with test dataset, both for tensorflow and numpy models.
+- **`Submissao1/`** - Documents (notebook and CSVs) for the first evaluation phase of this work.
+- **`Submissao2/`** - Documents (notebook and CSVs) for the second evaluation phase of this work.
+- **`trained_models/`** - Pre-trained models, ready to be used (numpy and tensorflow).
+- **`clean_dataset.py`** - Used to remove duplicated lines in a dataset.
+- **`create_datasets.py`** - Used to create datasets, based on AI and human texts.
+- **`predict_tf.py`** - Loads trained model and evaluates new text inputs to predict whether they are AI-generated or human-written. It supports LSTM, GRU, Transformer and Ensemble tensorflow models and provides the predict.
+- **`predict.py`** - Loads a trained model and evaluates new text inputs to predict whether they are AI-generated or human-written. It supports Logistic Regression, DNN, and RNN models and provides a command-line interface for user input.
+- **`preprocessing_tf.py`** - Preprocesses the dataset by cleaning and tokenizing text, balancing the dataset, extracting additional features, and training a Word2Vec model. It saves the processed data and models for later use in training and prediction.
+- **`preprocessing.py`** - Preprocesses the dataset by cleaning and tokenizing text, balancing the dataset, vectorizing text using TF-IDF, and training a Word2Vec model. It saves the processed data and models for later use in training and prediction. 
+- **`train_tf.py`** - Handles the training of different tensorflow models (LSTN, GRU, Transformer, DNN, Ensemble). It loads preprocessed data, initializes all the models, trains tehm, and saves the trained model weights.
+- **`train.py`** - Handles the training of different models (Logistic Regression, DNN, RNN) based on the command-line argument provided. It loads preprocessed data, initializes the appropriate model, trains it, and saves the trained model weights.
 
 ## How to use
 
