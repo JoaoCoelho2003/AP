@@ -9,6 +9,27 @@ import time
 import json
 import google.generativeai as genai
 
+def get_wikipedia_page(topic):
+    url = f"https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro&explaintext&titles={topic}&format=json"
+    response = requests.get(url)
+
+    if response.status_code != 200:
+        print(f"Error: Unable to access page for {topic}")
+        return None, None
+
+    data = response.json()
+    pages = data.get("query", {}).get("pages", {})
+    page = next(iter(pages.values()), None)
+
+    if not page or "extract" not in page:
+        print(f"Error: No content found for {topic}")
+        return None, None
+
+    title = page.get("title", topic)
+    content = page.get("extract", "")
+
+    cleaned_text = " ".join(content.split())
+    return title, cleaned_text
 
 def scrape_wikipedia_page(topic):
     url = f"https://en.wikipedia.org/wiki/{topic}"
