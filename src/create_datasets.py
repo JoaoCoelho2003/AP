@@ -31,27 +31,6 @@ def get_wikipedia_page(topic):
     cleaned_text = " ".join(content.split())
     return title, cleaned_text
 
-def scrape_wikipedia_page(topic):
-    url = f"https://en.wikipedia.org/wiki/{topic}"
-    response = requests.get(url)
-
-    if response.status_code != 200:
-        print(f"Error: Unable to access page for {topic}")
-        return None, None
-
-    soup = BeautifulSoup(response.text, "html.parser")
-    title = soup.find("h1", {"id": "firstHeading"}).get_text()
-    content = soup.find("div", {"class": "mw-parser-output"})
-
-    if not content:
-        return title, None
-
-    paragraphs = content.find_all("p")
-    text_content = " ".join(para.get_text() for para in paragraphs)
-    cleaned_text = " ".join(text_content.split())
-    return title, cleaned_text
-
-
 def get_random_article_from_category(category_title):
     url = f"https://en.wikipedia.org/w/api.php?action=query&list=categorymembers&cmtitle=Category:{category_title}&cmlimit=500&format=json"
     response = requests.get(url)
@@ -174,7 +153,7 @@ def generate_alternating_dataset(
                 seen_articles.add(article_title)
                 print(f"Processing article: {article_title} (from {topic})")
 
-                title, wiki_text = scrape_wikipedia_page(article_title)
+                title, wiki_text = get_wikipedia_page(article_title)
 
                 if wiki_text:
                     truncated_wiki_text = truncate_text(wiki_text)
@@ -209,7 +188,7 @@ def generate_alternating_dataset(
                     print(f"Failed to scrape {article_title}")
                     seen_articles.remove(article_title)
 
-            time.sleep(2)
+            time.sleep(10)
 
     except KeyboardInterrupt:
         print("\nProgram interrupted. Saving current progress...")
