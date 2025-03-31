@@ -25,12 +25,14 @@ The repository is organized inside `src` folder:
     - **`clean/`** - Processed datasets put together.
 - **`models/`** - Base code for our models divided in two folders:
     - **`numpyModels/`** - Models written using the numpy library (Logistic Regression, DNN and RNN)
-    - **`tensorflowModels/`** - Models written using the tensorflow library (Transformer, RNN [LSTM & GRU], DNN and BERT)
+    - **`tensorflowModels/`** - Models written using the tensorflow library (Transformer, RNN [LSTM & GRU] and DNN)
+    - **`tensorflowModels/`** - Models written in Jupyter Notebooks using the tensorflow library (CNN, RNN [LSTM & GRU], DNN and BERT)
 - **`preprocessed/`** - Processed data, ready to be used for numpy models.
 - **`preprocessed_tf/`** - Processed data, ready to be used for tensorflow models.
 - **`stats/`** - Used to compare model results with test dataset, both for tensorflow and numpy models.
 - **`Submissao1/`** - Documents (notebook and CSVs) for the first evaluation phase of this work.
 - **`Submissao2/`** - Documents (notebook and CSVs) for the second evaluation phase of this work.
+- **`Submissao3/`** - Documents (notebook and CSVs) for the third evaluation phase of this work.
 - **`trained_models/`** - Pre-trained models, ready to be used (numpy and tensorflow).
 - **`clean_dataset.py`** - Used to remove duplicated lines in a dataset.
 - **`create_datasets.py`** - Used to create datasets, based on AI and human texts.
