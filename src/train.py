@@ -31,7 +31,7 @@ if model_type == "dnn":
     model = NeuralNetwork(
         epochs=100, 
         batch_size=128,
-        learning_rate=0.0001,
+        learning_rate=0.001,
         momentum=0.9,
         verbose=True,
         loss=FocalLoss,

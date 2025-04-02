@@ -13,7 +13,6 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from models.tensorflowModels.dnn_model import train_dnn_model
 from models.tensorflowModels.rnn_model import train_rnn_model
 from models.tensorflowModels.transformer_model import train_transformer_model
-from models.tensorflowModels.bert_model import train_bert_model
 from models.tensorflowModels.ensemble_model import train_ensemble_model
 
 
