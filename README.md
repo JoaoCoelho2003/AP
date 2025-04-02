@@ -42,43 +42,59 @@ The repository is organized inside `src` folder:
 - **`preprocessing.py`** - Preprocesses the dataset by cleaning and tokenizing text, balancing the dataset, vectorizing text using TF-IDF, and training a Word2Vec model. It saves the processed data and models for later use in training and prediction. 
 - **`train_tf.py`** - Handles the training of different tensorflow models (LSTN, GRU, Transformer, DNN, Ensemble). It loads preprocessed data, initializes all the models, trains tehm, and saves the trained model weights.
 - **`train.py`** - Handles the training of different models (Logistic Regression, DNN, RNN) based on the command-line argument provided. It loads preprocessed data, initializes the appropriate model, trains it, and saves the trained model weights.
+- **`PresentationAndReport/`** - Contains the presentation used in the project defense and the project report.
+    - **`presentation.pdf`** - Presentation used in the project defense.
+    - **`report.pdf`** - Project report.
 
 ## How to use
 
-You can either run the frontend and backend together (full application) or run each model separately.
+Depending on the phase of the project, you can run the models in different ways.
 
-### Full Application
+### First Phase
 
-1. Ensure that the trained models are available in the `trained_models/` directory.
-2. Navigate to the `frontend/` folder and run:
-```sh
-$ npm install  
-$ npm run dev  
-``` 
-3. Navigate to the `backend/` folder and run:
-```sh
-$ python3 app.py
-```
-4. Access the frontend at `http://localhost:5173/` and interact with the application.
+1. First run the `preprocessing.py` script to preprocess the datasets:
 
-### Running Models Individually
-
-If you prefer to run each model separately (with no frontend), go to the `backend/`directory and run the following commands:
-
-1. Preprocess the datasets:
 ```sh
 $ python3 preprocessing.py
 ```
-2. Train a model:
+
+2. Train the models using the `train.py` script and specify the model you want to train.
+
 ```sh
 $ python3 train.py <model_name>
 ```
-3. Predict using a trained model:
+
+Replace `<model_name>` with the desired model: `logistic`, `dnn`, or `rnn`.
+
+3. After training, you can use the `predict.py` script to evaluate the models. You can specify the model you want to use for prediction:
+
 ```sh
 $ python3 predict.py <model_name>
 ```
 
 Replace `<model_name>` with the desired model: `logistic`, `dnn`, or `rnn`.
+
+4. To test the models you can use the **Jupyter Notebook** provided in the `stats/` folder, more specifically the `evaluate_phase1.ipynb` file. This notebook contains code to evaluate the models using the test dataset and compare their performance.
+
+### Second Phase
+
+1. Follow the same steps as in the first phase to preprocess the datasets and train the models but this time use the `preprocessing_tf.py` and `train_tf.py` scripts for the TensorFlow models (in this phase the `train_tf` automatically trains all the models available).
+
+2. After training, you can use the `predict_tf.py` script to evaluate the models. You can specify the model you want to use for prediction:
+
+```sh
+$ python3 predict_tf.py <model_name>
+```
+
+Replace `<model_name>` with the desired model: `lstm`, `gru`, `transformer`, `dnn`, or `ensemble`.
+
+3. To test the models you can use the **Jupyter Notebook** provided in the `stats/` folder, more specifically the `evaluate_phase2.ipynb` file. This notebook contains code to evaluate the models using the test dataset and compare their performance.
+
+### Third Phase
+
+1. Finally, to run the models, you no longer need any python scripts, simply run the **Jupyter Notebooks** present at `models/notebooks/` folder. The notebooks are organized by model type and contain all the necessary code to train and evaluate the models.
+
+2. If you want to evaluate even further the models, you can use the **Jupyter Notebook** provided in the `stats/` folder, more specifically the `evaluate_phase3.ipynb` file. This notebook contains code to evaluate the models using the test dataset and compare their performance.
 
 ## Datasets
 The project uses two datasets:
@@ -99,13 +115,4 @@ The project uses two datasets:
     validation_dataset = load_dataset("andythetechnerd03/AI-human-text", split="train", streaming=True)
     ```
 
-## Implemented Models
-Currently, the backend supports the following models:
-- **RNN** (Recurrent Neural Network)
-- **DNN** (Deep Neural Network)
-- **Logistic Regression**
-
-## Future Plans
-- Expanding the dataset for better performance.
-- Adding more models to improve classification accuracy.
-- Use libraries like tensorflow instead of building the models by hand using numpy.
+3. **Custom Dataset**: The project also includes a custom dataset created by the team, which contains human-written texts that were scraped from wikipedia and AI-generated texts created using the `gemini` model. This dataset is used for training and testing the models. The dataset is located in the `datasets/` folder, more specifically `custom_dataset.csv`.
